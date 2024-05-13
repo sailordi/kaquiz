@@ -1,0 +1,7 @@
+Flask
+firebase-admin
+pyrebase
+firebase-admin
+flask-cors
+gunicorn
+dotenv
