@@ -21,3 +21,4 @@ def submit_location():
     update_location(user_id,latitude,longitude)
 
     return jsonify({'message': 'Location updated successfully'}), 200
+

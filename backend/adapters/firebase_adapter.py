@@ -43,3 +43,50 @@ def invites(user_id) :
     outgoing_invites = [{"id": doc.id, **doc.to_dict()} for doc in outgoing]
 
     return  incoming_invites,outgoing_invites
+
+def add_friend(user_id,friend_id) :
+    user_ref =db.collection('users').document(user_id).collection('friends')
+    friend_ref =db.collection('users').document(friend_id).collection('friends')
+
+    user_ref.set({"user_id":user_id})
+    friend_ref.set({"user_id":friend_id})
+
+def remove_friend(user_id,friend_id) :
+    user_ref =db.collection('users').document(user_id).collection('friends')
+    friend_ref =db.collection('users').document(friend_id).collection('friends')
+
+    friend_rm = user_ref.where("user_id","LIKE",friend_id)
+    user_rm = friend_ref.where("user_id","LIKE",user_id)
+
+    found = False
+
+    for doc in friend_rm.stream():
+        found = True
+        doc.reference.delete()
+
+    if found == False:
+        raise MyError("Friend not found",404)
+
+    found = False
+
+    for doc in user_rm.stream():
+        found = True
+        doc.reference.delete()
+
+    if found == False:
+        raise MyError("Friend not found",404)
+
+def lacations(user_id):
+    friends_ref =db.collection('users').document(user_id).collection('friends')
+    location_ref = db.collection('locations')
+    friend_locations = []
+
+    for friend_id in friends_ref.get():
+        data = location_ref.document(friend_id).get()
+        if data.exists:
+            friend_locations.append({
+                "id": friend_id,
+                **data.to_dict()
+            })
+
+    return friend_locations

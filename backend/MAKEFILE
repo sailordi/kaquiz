@@ -1,0 +1,15 @@
+IMAGE_NAME="kahoot"
+SERVER_PORT=5001
+PUBLIC_PORT=5001
+
+build-image:
+	docker rmi ${IMAGE_NAME} || echo "Clean"
+	docker build -t ${IMAGE_NAME} .
+
+run: sample-stocks build-image
+	docker run -d -p  ${PUBLIC_PORT}:${SERVER_PORT} --name ${IMAGE_NAME} --rm ${IMAGE_NAME}
+
+stop:
+	docker stop ${IMAGE_NAME}
+
+.PHONY: run stop build-image

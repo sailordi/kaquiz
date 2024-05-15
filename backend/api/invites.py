@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from adapters.firebase_adapter import verify_id_token, send_invite, respond_invite, invites
+from adapters.firebase_adapter import verify_id_token, send_invite, respond_invite, invites, accept_invite
 from adapters.myError import MyError
 
 invites_blueprint = Blueprint('invites', __name__)
@@ -42,6 +42,7 @@ def accept_invite(user_id):
         recipient_id = decoded_token['uid']
         #Accept invite logic
         respond_invite(recipient_id,user_id,'accepted')
+        add_friend(user_id,recipient_id)
     except MyError as e:
         return jsonify({"error": e.message}),e.number
 
