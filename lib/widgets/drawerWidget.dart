@@ -37,7 +37,7 @@ class _DrawerWidgetState extends ConsumerState<DrawerWidget> {
                     leading: Icon(Icons.home,
                       color: Theme.of(context).colorScheme.inversePrimary,
                     ),
-                    title: const Text("M E S S A G E S"),
+                    title: const Text("L O C A T I O N S"),
                     onTap: () {
                       Navigator.pop(context);
                     },
@@ -49,28 +49,14 @@ class _DrawerWidgetState extends ConsumerState<DrawerWidget> {
                     leading: Icon(Icons.person,
                       color: Theme.of(context).colorScheme.inversePrimary,
                     ),
-                    title: const Text("P R O F I L E"),
+                    title: const Text("I N V I T E S"),
                     onTap: () {
                       Navigator.pop(context);
 
-                      Navigator.pushNamed(context,"/profile");
+                      Navigator.pushNamed(context,RoutePaths.invites() );
                     },
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: ListTile(
-                    leading: Icon(Icons.contacts,
-                      color: Theme.of(context).colorScheme.inversePrimary,
-                    ),
-                    title: const Text("C O N T A C T S"),
-                    onTap: () {
-                      Navigator.pop(context);
-
-                      Navigator.pushNamed(context,"/contacts");
-                    },
-                  ),
-                )
               ],
             ),
             Padding(

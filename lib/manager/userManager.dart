@@ -12,7 +12,8 @@ class UserManager extends StateNotifier<UserModel> {
   UserManager(this.ref) : super(UserModel.empty() );
 
   Future<void> loadData() async {
-    state = await firebaseA.getYourData();
+    //state = await firebaseA.getYourData();
+    state = UserModel.moc();
   }
 
   Future<void> logIn(String email,String password) async {

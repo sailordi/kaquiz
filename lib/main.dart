@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kahoot/views/invites/invitesView.dart';
+import 'package:kahoot/views/locations/locationsView.dart';
 import 'firebase_options.dart';
 
 import '../../views/auth/authView.dart';
@@ -26,9 +28,11 @@ class MyApp extends StatelessWidget {
           title: 'Stock market',
           theme: MyTheme.lightMode(),
           darkTheme: MyTheme.darkMode(),
-          initialRoute: "/",
+          initialRoute: RoutePaths.locations(),
           routes: {
             RoutePaths.auth(): (context) => const AuthView(),
+            RoutePaths.locations(): (context) => const LocationsView(),
+            RoutePaths.invites() : (context) => const InvitesView()
           },
           debugShowCheckedModeBanner: false,
         )
