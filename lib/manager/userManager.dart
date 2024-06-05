@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../adapters/backendAdapter.dart';
 import '../adapters/firebaseAdapter.dart';
 import '../models/userModel.dart';
 
@@ -8,6 +9,7 @@ import '../models/userModel.dart';
 class UserManager extends StateNotifier<UserModel> {
   final StateNotifierProviderRef ref;
   final FirebaseAdapter firebaseA = FirebaseAdapter();
+  final BackendAdapter backendA = BackendAdapter(8080);
 
   UserManager(this.ref) : super(UserModel.empty() );
 

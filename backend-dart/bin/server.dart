@@ -5,6 +5,7 @@ import 'package:firebase_dart/firebase_dart.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
+import 'package:shelf_cors_headers/shelf_cors_headers.dart';
 
 import 'routes/auth.dart';
 import 'routes/users.dart';
@@ -20,7 +21,7 @@ void main(List<String> args) async {
 
   // For Google Cloud Run, we respect the PORT environment variable
   var portStr = result['port'] ?? Platform.environment['PORT'] ?? '8080';
-  var host = result['host'] ?? Platform.environment['HOST'] ?? 'localhost';
+  var host = result['host'] ?? Platform.environment['HOST'] ?? '0.0.0.0';
   var port = int.tryParse(portStr);
 
   if (port == null) {
@@ -37,7 +38,10 @@ void main(List<String> args) async {
     ..mount('/api/invites', invitesRouter.call)
     /*..mount('/api/friends', friendsRouter)*/;
 
-  final handler = Pipeline().addMiddleware(logRequests()).addHandler(app.call);
+  final handler = Pipeline()
+      .addMiddleware(logRequests())
+      .addMiddleware(corsHeaders())
+      .addHandler(app.call);
 
   var server = await io.serve(handler, host, port);
   print('Serving at http://${server.address.host}:${server.port}');

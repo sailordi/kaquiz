@@ -1,21 +1,24 @@
-# Use latest stable channel SDK.
-FROM dart:stable AS build
+# Use an official Dart runtime as a parent image
+FROM dart:stable
 
-# Resolve app dependencies.
+# Set the working directory inside the container
 WORKDIR /app
+
+# Copy the pubspec and pubspec.lock files to the working directory
 COPY pubspec.* ./
+
+# Get dependencies
 RUN dart pub get
 
-# Copy app source code (except anything in .dockerignore) and AOT compile app.
+# Copy the rest of the application code to the working directory
 COPY . .
-RUN dart compile exe bin/server.dart -o bin/server
 
-# Build minimal serving image from AOT-compiled `/server`
-# and the pre-built AOT-runtime in the `/runtime/` directory of the base image.
-FROM scratch
-COPY --from=build /runtime/ /
-COPY --from=build /app/bin/server /app/bin/
-
-# Start server.
+# Expose the port your server will run on
 EXPOSE 8080
-CMD ["/app/bin/server"]
+
+# Define environment variables for host and port
+ENV HOST=0.0.0.0
+ENV PORT=8080
+
+# Run the server when the container launches
+CMD ["dart", "bin/server.dart"]
