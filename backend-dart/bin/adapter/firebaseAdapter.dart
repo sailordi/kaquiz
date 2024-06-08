@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shelf/shelf.dart';
 
-import '../configurations.dart';
+import '../globals.dart';
 
 class FirebaseAdapter {
 
@@ -13,13 +13,14 @@ class FirebaseAdapter {
       String idToken = (jsonDecode(payload) as Map)['id_token'];
 
       final response = await http.post(
-        Uri.parse('https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=${Configurations.apiKey}'),
+        Uri.parse(_tokenUrl() ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'postBody': 'id_token=$idToken&providerId=google.com',
-          //'requestUri': 'http://localhost',
+          'requestUri': 'http://localhost',
           'returnSecureToken': true
         }),
+
       );
 
       if (response.statusCode == 200) {
@@ -43,7 +44,7 @@ class FirebaseAdapter {
 
     try {
       final response = await http.post(
-        Uri.parse('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${Configurations.apiKey}'),
+        Uri.parse(_headerUrl() ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'idToken': authHeader}),
       );
@@ -210,16 +211,24 @@ class FirebaseAdapter {
     return locations;
   }
 
+  static String _tokenUrl() {
+    return "https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=$apiKey";
+  }
+
+  static String _headerUrl() {
+    return "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=$apiKey";
+  }
+
   static String _usersCollectionUrl() {
-    return "https://firestore.googleapis.com/v1/projects/${Configurations.projectId}/databases/(default)/documents/users";
+    return "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents/users";
   }
 
   static String _locationCollectionUrl() {
-    return "https://firestore.googleapis.com/v1/projects/${Configurations.projectId}/databases/(default)/documents/locations";
+    return "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents/locations";
   }
 
   static String _invitesCollectionUrl() {
-    return "https://firestore.googleapis.com/v1/projects/${Configurations.projectId}/databases/(default)/documents/invites";
+    return "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents/invites";
   }
 
   static String _friendsCollectionUrl(String userId) {

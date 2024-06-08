@@ -13,6 +13,9 @@ RUN dart pub get
 # Copy the rest of the application code to the working directory
 COPY . .
 
+# Copy the secrets file
+COPY secrets.env /app/secrets.env
+
 # Expose the port your server will run on
 EXPOSE 8080
 

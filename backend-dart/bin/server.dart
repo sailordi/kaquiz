@@ -7,6 +7,7 @@ import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_cors_headers/shelf_cors_headers.dart';
 
+import 'globals.dart';
 import 'routes/auth.dart';
 import 'routes/users.dart';
 import 'routes/locations.dart';
@@ -24,6 +25,9 @@ void main(List<String> args) async {
   var host = result['host'] ?? Platform.environment['HOST'] ?? '0.0.0.0';
   var port = int.tryParse(portStr);
 
+  apiKey = Platform.environment['API_KEY'] ?? "";
+  projectId = Platform.environment['PROJECT_ID'] ?? "";
+
   if (port == null) {
     stdout.writeln('Could not parse port value "$portStr" into a number.');
     // 64: command line usage error
@@ -36,7 +40,7 @@ void main(List<String> args) async {
     ..mount('/api/users', usersRouter.call)
     ..mount('/api/locations', locationsRouter.call)
     ..mount('/api/invites', invitesRouter.call)
-    /*..mount('/api/friends', friendsRouter)*/;
+    ..mount('/api/friends', friendsRouter.call);
 
   final handler = Pipeline()
       .addMiddleware(logRequests())

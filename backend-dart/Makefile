@@ -3,6 +3,7 @@ IMAGE_NAME = my_friend_tracker_api
 CONTAINER_NAME = friend_tracker_api_container
 HOST = 0.0.0.0
 PORT = 8080
+SECRETS_FILE = secrets.env
 
 # Default target
 all: build run
@@ -13,7 +14,7 @@ build:
 
 # Run the Docker container
 run: stop
-	docker run -d -p $(PORT):$(PORT) --name $(CONTAINER_NAME) -e HOST=$(HOST) -e PORT=$(PORT) $(IMAGE_NAME)
+	docker run -d -p $(PORT):$(PORT) --name $(CONTAINER_NAME) --env-file $(SECRETS_FILE) -e HOST=$(HOST) -e PORT=$(PORT) $(IMAGE_NAME)
 
 # Stop and remove the running container
 stop:
