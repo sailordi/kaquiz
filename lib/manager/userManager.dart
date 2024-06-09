@@ -8,10 +8,12 @@ import '../models/userModel.dart';
 
 class UserManager extends StateNotifier<UserModel> {
   final StateNotifierProviderRef ref;
-  final FirebaseAdapter firebaseA = FirebaseAdapter();
+  late FirebaseAdapter firebaseA;
   final BackendAdapter backendA = BackendAdapter(8080);
 
-  UserManager(this.ref) : super(UserModel.empty() );
+  UserManager(this.ref) : super(UserModel.empty() ) {
+      firebaseA = FirebaseAdapter(backendA: backendA);
+  }
 
   Future<void> loadData() async {
     //state = await firebaseA.getYourData();

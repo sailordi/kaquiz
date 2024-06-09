@@ -56,7 +56,7 @@ class BackendAdapter {
     }
   }
 
-  Future<void> submitLocation(String token, double latitude, double longitude) async {
+  Future<void> submitLocation(String token,double latitude,double longitude) async {
     final response = await http.post(
       Uri.parse('$baseUrl/api/locations'),
       headers: <String, String>{
@@ -71,6 +71,91 @@ class BackendAdapter {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to submit location');
+    }
+  }
+
+  Future<void> getInvites(String accessToken,int userId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/invites/$userId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'authorization': accessToken,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      //TODO data parsing
+      print(response.body);
+    } else {
+      if (response.statusCode != 200) {
+        //TODO error getInvites
+        print(response.body);
+      }
+    }
+  }
+
+  Future<void> declineInvite(String accessToken, int userId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/invites/$userId/decline'),
+      headers: {
+        'Content-Type': 'application/json',
+        'authorization': accessToken,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      //TODO error declineInvite
+      print(response.body);
+    }
+  }
+
+  Future<void> acceptInvite(String accessToken, int userId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/invites/$userId/accept'),
+      headers: {
+        'Content-Type': 'application/json',
+        'authorization': accessToken,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      //TODO error acceptInvite
+      print(response.body);
+    }
+
+  }
+
+  Future<void> deleteFriend(String accessToken, int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/friends/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+        'authorization': accessToken,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      //TODO error deleteFriend
+      print(response.body);
+    }
+
+  }
+
+  Future<void> getFriendsLocations(String accessToken) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/friends'),
+      headers: {
+        'Content-Type': 'application/json',
+        'authorization': accessToken,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      //TODO parse data getFriendsLocations
+      print(response.body);
+    } else {
+      //TODO error getFriendsLocations
+      print(response.body);
     }
   }
 
