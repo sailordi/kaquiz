@@ -12,6 +12,8 @@ migrate_working_dir/
 
 google-services.json
 firebase_options.dart
+GoogleService-Info.plist
+firebase_app_id_file.json
 secrets.env
 
 # IntelliJ related
