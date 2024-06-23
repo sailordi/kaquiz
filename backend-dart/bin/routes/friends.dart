@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:shelf/shelf.dart';
@@ -27,7 +28,7 @@ class Friends {
       return error(userData.$2,userData.$1);
     }
 
-    List<String> data = await FirebaseAdapter.friendLocations(userData.$1);
+    HashMap<String,(String,String)> data = await FirebaseAdapter.friendLocations(userData.$1);
 
     return Response.ok(jsonEncode(data),headers: {'Content-Type': 'application/json'});
   }

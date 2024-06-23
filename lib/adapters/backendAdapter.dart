@@ -32,10 +32,12 @@ class BackendAdapter {
     );
 
     if (response.statusCode == 200) {
+      print("authenticateUser error: ${response.body}");
       return jsonDecode(response.body)['access_token'];
     } else {
-      throw Exception('Failed to authenticate user');
+      print("authenticateUser: ${response.body}");
     }
+    return "";
   }
 
   Future<void> updateUser(String token, String name, String avatar) async {
@@ -52,6 +54,8 @@ class BackendAdapter {
     );
 
     if (response.statusCode != 200) {
+      //TODO error updateUser
+      print("error updateUser: ${response.body}");
       throw Exception('Failed to update user');
     }
   }
@@ -70,8 +74,13 @@ class BackendAdapter {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to submit location');
+      //TODO error submitLocatio
+      print("error submitLocation: ${response.body}");
     }
+    else {
+      print("submitLocation: ${response.body}");
+    }
+
   }
 
   Future<void> getInvites(String accessToken,int userId) async {
@@ -84,14 +93,13 @@ class BackendAdapter {
     );
 
     if (response.statusCode == 200) {
-      //TODO data parsing
-      print(response.body);
+      //TODO data parsing getInvites
+      print("getInvites: ${response.body}");
     } else {
-      if (response.statusCode != 200) {
         //TODO error getInvites
-        print(response.body);
-      }
+        print("error getInvites: ${response.body}");
     }
+
   }
 
   Future<void> declineInvite(String accessToken, int userId) async {
@@ -105,8 +113,12 @@ class BackendAdapter {
 
     if (response.statusCode != 200) {
       //TODO error declineInvite
-      print(response.body);
+      print("error declineInvite: ${response.body}");
     }
+    else {
+      print("declineInvite: ${response.body}");
+    }
+
   }
 
   Future<void> acceptInvite(String accessToken, int userId) async {
@@ -120,7 +132,10 @@ class BackendAdapter {
 
     if (response.statusCode != 200) {
       //TODO error acceptInvite
-      print(response.body);
+      print("error acceptInvite: ${response.body}");
+    }
+    else {
+      print("acceptInvite: ${response.body}");
     }
 
   }
@@ -136,7 +151,9 @@ class BackendAdapter {
 
     if (response.statusCode != 200) {
       //TODO error deleteFriend
-      print(response.body);
+      print("error deleteFriend: ${response.body}");
+    }else {
+      print("deleteFriend: ${response.body}");
     }
 
   }
@@ -152,10 +169,10 @@ class BackendAdapter {
 
     if (response.statusCode == 200) {
       //TODO parse data getFriendsLocations
-      print(response.body);
+      print("getFriendsLocations: ${response.body}");
     } else {
       //TODO error getFriendsLocations
-      print(response.body);
+      print("error getFriendsLocations: ${response.body}");
     }
   }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shelf/shelf.dart';
@@ -192,21 +193,24 @@ class FirebaseAdapter {
 
   }
 
-  static Future<List<String> > friendLocations(String userId) async {
+  static Future<HashMap<String,(String,String)> > friendLocations(String userId) async {
     final friendsResponse = await http.get(
       Uri.parse(_friendsCollectionUrl(userId) ),
     );
 
     final friends = jsonDecode(friendsResponse.body)['documents'];
 
-    List<String> locations = [];
+    HashMap<String,(String,String)> locations = HashMap();
 
     for (var friend in friends) {
       final friendId = friend['fields']['friend_id']['stringValue'];
       final locationResponse = await http.get(
         Uri.parse('${_locationCollectionUrl()}/$friendId'),
       );
-      locations.add(jsonDecode(locationResponse.body)['fields']);
+      String latitude = jsonDecode(locationResponse.body)['fields']['latitude'];
+      String longitude = jsonDecode(locationResponse.body)['fields']['longitude'];
+
+      locations[friendId] = (latitude,longitude);
     }
     return locations;
   }
