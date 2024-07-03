@@ -15,6 +15,7 @@ firebase_options.dart
 GoogleService-Info.plist
 firebase_app_id_file.json
 secrets.env
+firebase.json
 
 # IntelliJ related
 *.iml
