@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
           title: 'Stock market',
           theme: MyTheme.lightMode(),
           darkTheme: MyTheme.darkMode(),
-          initialRoute: RoutePaths.locations(),
+          initialRoute: RoutePaths.auth(),
           routes: {
             RoutePaths.auth(): (context) => const AuthView(),
             RoutePaths.locations(): (context) => const LocationsView(),

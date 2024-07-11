@@ -22,9 +22,6 @@ class RegisterView extends ConsumerStatefulWidget {
 
 class _RegisterViewState extends ConsumerState<RegisterView> {
   final TextEditingController usernameC = TextEditingController();
-  final TextEditingController emailC = TextEditingController();
-  final TextEditingController passwordC = TextEditingController();
-  final TextEditingController confirmPasswordC = TextEditingController();
   File? _profileImage;
 
   void _selectFile(File? f) {
@@ -38,18 +35,6 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
 
     if(usernameC.text.isEmpty) {
       ret += "Username is missing";
-    }
-    if(emailC.text.isEmpty) {
-      if(ret.isNotEmpty) { ret += "\n"; }
-      ret += "No email entered";
-    }
-
-    if(passwordC.text.isEmpty) {
-      if(ret.isNotEmpty) { ret += "\n"; }
-      ret += "No password entered";
-    } else if(passwordC.text != confirmPasswordC.text) {
-      if(ret.isNotEmpty) { ret += "\n"; }
-      ret += "Passwords does not match";
     }
 
     return ret;
@@ -69,15 +54,23 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
     }
 
     try{
-      await ref.read(userManager.notifier).register(usernameC.text,emailC.text,passwordC.text,_profileImage);
+      await ref.read(userManager.notifier).register(usernameC.text,_profileImage);
       if(mounted) {
         Navigator.pop(context);
       }
+
     } on FirebaseAuthException catch(e) {
       if(mounted) {
         Navigator.pop(context);
         Helper.messageToUser(e.code, context);
       }
+
+    } on String catch(e) {
+      if(mounted) {
+        Navigator.pop(context);
+        Helper.messageToUser(e,context);
+      }
+
     }
 
   }
@@ -135,22 +128,13 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
               const SizedBox(height: 30,),
               //Username
               TextFieldWidget(hint: "Username", controller: usernameC),
-              const SizedBox(height: 10,),
-              //Email
-              TextFieldWidget(hint: "Email", controller: emailC),
-              const SizedBox(height: 10,),
-              //Password
-              TextFieldWidget(hint: "Password", controller: passwordC,obscure: true),
-              const SizedBox(height: 15,),
-              //Password
-              TextFieldWidget(hint: "Confirm password", controller: confirmPasswordC,obscure: true),
               const SizedBox(height: 15,),
               //Profile pic
               selectDeselectProfileImage(),
               const SizedBox(height: 5,),
              profileImage(),
               const SizedBox(height: 10,),
-              ExpandedButtonWidget(text: "Register", tap: registerFirebase),
+              ExpandedButtonWidget(text: "Register with Google", tap: registerFirebase),
               const SizedBox(height: 10,),
 
               Row(

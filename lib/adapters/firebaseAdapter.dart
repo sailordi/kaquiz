@@ -20,10 +20,10 @@ class FirebaseAdapter {
     return _users.doc(userId).collection("friends");
   }
 
-  Future<void> register(String username,String email,String password,File? image) async {
+  Future<void> register(AuthCredential credential,String email,String username,String accessToken,String idToken,File? image) async {
+    FirebaseAuth.instance.signInWithCredential(credential);
+
     try {
-      UserCredential c = await _auth.createUserWithEmailAndPassword(email: email, password: password);
-      String id = c.user!.uid;
       String imageUrl = "";
       UploadTask uploadTask;
 
@@ -31,15 +31,15 @@ class FirebaseAdapter {
         var ref = _storage.ref().child('defaultProfileImage.png');
         imageUrl = await ref.getDownloadURL();
       }else {
-        var ref = _storage.ref().child("profileImage").child(id);
+        var ref = _storage.ref().child("profileImage").child(idToken);
 
         uploadTask = ref.putFile(image);
         final taskSnapshot = await uploadTask.whenComplete(() {});
         imageUrl = await taskSnapshot.ref.getDownloadURL();
       }
 
-      _users.doc(id).set({
-        "id":id,
+      _users.doc(idToken).set({
+        "id":idToken,
         "email":email,
         "username":username,
         "profileUrl":imageUrl,
@@ -51,20 +51,15 @@ class FirebaseAdapter {
 
   }
 
-  Future<void> login(String user,String password) async {
-    try {
-      await _auth.signInWithEmailAndPassword(email: user,password: password);
-    } on FirebaseAuthException catch(e) {
-      rethrow;
-    }
+  Future<void> logIn(AuthCredential credential) async {
+   await _auth.signInWithCredential(credential);
   }
 
-  void logOut() {
-    FirebaseAuth.instance.signOut();
+  Future<void> logOut() async {
+    await _auth.signOut();
   }
 
-  Future<UserModel> getYourData() async {
-    var userId = _auth.currentUser!.uid;
+  Future<UserModel> getYourData(String userId) async {
     UserData data = await getUser(userId);
     var friendsId = await _fiendRef(userId).get();
     Users receivedRequests = [];

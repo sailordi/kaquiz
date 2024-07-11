@@ -41,7 +41,7 @@ class _LocationsViewState extends ConsumerState<LocationsView> {
   }
 
   void _init() async {
-    await ref.read(userManager.notifier).loadData();
+    await ref.read(userManager.notifier).fetchFriends();
   }
 
   Future<void> removeFriend(String userId) async {

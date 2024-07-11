@@ -40,7 +40,7 @@ class BackendAdapter {
     return "";
   }
 
-  Future<void> updateUser(String token, String name, String avatar) async {
+  Future<void> updateUser(String token,String name,String avatar) async {
     final response = await http.put(
       Uri.parse('$baseUrl/api/users'),
       headers: <String, String>{
@@ -83,7 +83,7 @@ class BackendAdapter {
 
   }
 
-  Future<void> getInvites(String accessToken,int userId) async {
+  Future<void> getInvites(String accessToken,String userId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/api/invites/$userId'),
       headers: {
@@ -102,7 +102,7 @@ class BackendAdapter {
 
   }
 
-  Future<void> declineInvite(String accessToken, int userId) async {
+  Future<void> declineInvite(String accessToken,String userId) async {
     final response = await http.post(
       Uri.parse('$baseUrl/api/invites/$userId/decline'),
       headers: {
@@ -121,7 +121,7 @@ class BackendAdapter {
 
   }
 
-  Future<void> acceptInvite(String accessToken, int userId) async {
+  Future<void> acceptInvite(String accessToken,String userId) async {
     final response = await http.post(
       Uri.parse('$baseUrl/api/invites/$userId/accept'),
       headers: {
@@ -140,7 +140,7 @@ class BackendAdapter {
 
   }
 
-  Future<void> deleteFriend(String accessToken, int id) async {
+  Future<void> deleteFriend(String accessToken,String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/api/friends/$id'),
       headers: {

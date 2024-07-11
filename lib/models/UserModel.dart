@@ -20,7 +20,7 @@ class UserModel {
 
   UserModel.moc(): data = UserData.moc1(),accessToken = "",selectedUser = null,sentRequests = [UserData.moc2()],receivedRequests = [UserData.moc3()],friends = [UserData.moc4()];
 
-  UserModel copyWith({UserData? data, String? accessToken,UserData? selectedUser,Users? sentRequests,Users? receivedRequests,Users? friends}) {
+  UserModel copyWith({UserData? data,String? accessToken,UserData? selectedUser,Users? sentRequests,Users? receivedRequests,Users? friends}) {
     return UserModel(
         data: data ?? this.data,
         accessToken: accessToken ?? this.accessToken,
