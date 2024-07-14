@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kahoot/models/userData.dart';
-import 'package:kahoot/widgets/locationWidget.dart';
+import 'package:kaquiz/manager/userManager.dart';
 
-import '../../manager/userManager.dart';
+import '../../models/userData.dart';
 import '../../widgets/drawerWidget.dart';
+import '../../widgets/locationWidget.dart';
 
 class LocationsView extends ConsumerStatefulWidget {
   const LocationsView({super.key});
@@ -17,38 +17,19 @@ class LocationsView extends ConsumerStatefulWidget {
 }
 
 class _LocationsViewState extends ConsumerState<LocationsView> {
-  bool login = true;
-  late Timer _timer;
 
   @override
   void initState() {
     super.initState();
-    _init();
-
-    Timer.periodic(const Duration(seconds: 10), (timer) {
-      _updateLoc();
-    });
-
   }
 
   @override
   void dispose() {
-    _timer.cancel();
     super.dispose();
   }
 
-  Future<void> _updateLoc() async {
-  }
-
-  void _init() async {
-    await ref.read(userManager.notifier).fetchFriends();
-  }
-
-  Future<void> removeFriend(String userId) async {
-
-  }
-
   dynamic yourData(UserData data) {
+
     return Column(
       children: [
         Row(
@@ -88,29 +69,30 @@ class _LocationsViewState extends ConsumerState<LocationsView> {
 
   @override
   Widget build(BuildContext context) {
-      var uM = ref.read(userManager);
+    var userData = ref.watch(userDataManager);
+    var friendsData = ref.watch(friendsManager);
 
       return Scaffold(
           appBar: AppBar(
             backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-            title: const Text("Kahoot: locations"),
+            title: const Text("Kaquiz: locations"),
           ),
           drawer: const DrawerWidget(),
           body:Column(
             children: [
-             yourData(uM.data),
+             yourData(userData),
               const SizedBox(height: 20,),
               const Text("Friends:"),
               const SizedBox(height: 20,),
               Flexible(
                 child: ListView.builder(
                     shrinkWrap: true,
-                    itemCount: uM.friends.length,
+                    itemCount: friendsData.length,
                     itemBuilder: (context,index) {
                       return Column(
                         children: [
-                          LocationWidget(userData: uM.friends[index]),
-                          (uM.friends.length-1 == index) ? const SizedBox() :
+                          LocationWidget(userData: friendsData[index]),
+                          (friendsData.length-1 == index) ? const SizedBox() :
                           const SizedBox(height: 20,)
                         ],
                       );

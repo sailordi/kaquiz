@@ -1,9 +1,5 @@
 import 'userData.dart';
 
-typedef Contacts = List<UserData>;
-
-typedef Users = List<UserData>;
-
 class UserModel {
   UserData data;
   UserData? selectedUser;

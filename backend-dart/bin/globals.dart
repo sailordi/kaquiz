@@ -1,2 +1,0 @@
-String apiKey = "";
-String projectId = "";

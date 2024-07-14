@@ -17,7 +17,7 @@ class _DrawerWidgetState extends ConsumerState<DrawerWidget> {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-        backgroundColor: Theme.of(context).colorScheme.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -27,7 +27,7 @@ class _DrawerWidgetState extends ConsumerState<DrawerWidget> {
                     child: SizedBox(
                       width: 1500,
                       height: 100,
-                      child: Image.asset("assets/logo/logo.png"),
+                      child: Image.asset("asset/logo.png"),
                     )
                 ),
                 const SizedBox(height: 40,),
@@ -52,7 +52,7 @@ class _DrawerWidgetState extends ConsumerState<DrawerWidget> {
                     title: const Text("I N V I T E S"),
                     onTap: () {
                       Navigator.pop(context);
-
+                      ref.read(userManager.notifier).fetchRequests();
                       Navigator.pushNamed(context,RoutePaths.invites() );
                     },
                   ),

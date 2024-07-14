@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kahoot/views/invites/invitesView.dart';
-import 'package:kahoot/views/locations/locationsView.dart';
+
 import 'firebase_options.dart';
 
+import '../../helper/myTheme.dart';
+import '../../helper/routePaths.dart';
+import '../../views/invites/invitesView.dart';
+import '../../views/locations/locationsView.dart';
 import '../../views/auth/authView.dart';
-import 'helper/myTheme.dart';
-import 'helper/routePaths.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +26,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ProviderScope(
         child: MaterialApp(
-          title: 'Stock market',
+          title: 'Kaquiz',
           theme: MyTheme.lightMode(),
           darkTheme: MyTheme.darkMode(),
           initialRoute: RoutePaths.auth(),

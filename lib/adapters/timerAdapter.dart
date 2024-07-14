@@ -23,13 +23,8 @@ class TimerAdapter {
   }
 
   void trigger() {
-    if(_running == false) {
-      _timer.cancel();
-    }
-    _timer.cancel();
-    onTiger;
-    _timer = Timer.periodic(Duration(minutes: minutes),(timer) { onTiger; } );
-    _running = true;
+    stop();
+    start();
   }
 
 

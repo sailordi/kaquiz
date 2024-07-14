@@ -2,22 +2,21 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:geolocator/geolocator.dart';
 
-import '../adapters/backendAdapter.dart';
 import '../adapters/firebaseAdapter.dart';
+import '../adapters/locationAdapter.dart';
 import '../adapters/timerAdapter.dart';
+import '../models/userData.dart';
 import '../models/userModel.dart';
-
 
 class UserManager extends StateNotifier<UserModel> {
   final StateNotifierProviderRef ref;
-  late FirebaseAdapter firebaseA;
-  final BackendAdapter backendA = BackendAdapter(8080);
+  late FirebaseAdapter firebaseA = FirebaseAdapter();
   late TimerAdapter timerA;
 
-  UserManager(this.ref) : super(UserModel.empty() ) {
-      firebaseA = FirebaseAdapter(backendA: backendA);
-      timerA = TimerAdapter(minutes: 10,onTiger: _fetchFriendsTimer);
+  UserManager(this.ref) : super(UserModel.empty() ){
+    timerA = TimerAdapter(minutes: 10,onTiger: _timerFunctions);
   }
 
   Future<void> logIn() async {
@@ -34,6 +33,7 @@ class UserManager extends StateNotifier<UserModel> {
         throw "Error: Could not log in with google could not get auth";
       }
 
+      String? email = user.email,id = user.id;
       String? accessToken = auth?.accessToken;
       String? idToken = auth.idToken;
 
@@ -42,7 +42,7 @@ class UserManager extends StateNotifier<UserModel> {
           idToken: idToken
       );
 
-      var userD = await _login(cred,email,accessToken!,idToken!);
+      var userD = await _login(cred,email,accessToken!,id);
 
       state = userD;
 
@@ -68,6 +68,8 @@ class UserManager extends StateNotifier<UserModel> {
         throw "Error: Could not log in with google could not get auth";
       }
 
+
+      String email = user.email,id = user.id;
       String? accessToken = auth?.accessToken;
       String? idToken = auth.idToken;
 
@@ -76,9 +78,9 @@ class UserManager extends StateNotifier<UserModel> {
           idToken: idToken
       );
 
-      await firebaseA.register(cred,user.email,username,accessToken!,idToken!,image);
+      await firebaseA.register(cred,email,username,accessToken!,id,image);
 
-      var userD = await _login(cred,accessToken!,idToken!);
+      var userD = await _login(cred,email,accessToken!,id);
 
       state = userD;
 
@@ -90,24 +92,20 @@ class UserManager extends StateNotifier<UserModel> {
   }
 
   void logOut() {
-    timerA.stop();
+
     state = UserModel.empty();
 
     GoogleSignIn().signOut();
   }
 
-  Future<UserModel> _login(AuthCredential credential,String email,String accessToken,String idToken) async {
+  Future<UserModel> _login(AuthCredential credential,String email,String accessToken,String id) async {
     try {
       await firebaseA.logIn(credential,email);
     } catch(e) {
       rethrow;
     }
 
-    String token = await backendA.authenticateUser(idToken);
-
-    print("Token: $idToken\nReturn token: $token");
-
-    var userD = await firebaseA.getYourData(idToken!);
+    var userD = await firebaseA.getYourData(id);
 
     return userD.copyWith(accessToken: accessToken);
   }
@@ -116,20 +114,87 @@ class UserManager extends StateNotifier<UserModel> {
     timerA.trigger();
   }
 
-  Future<void> _fetchFriendsTimer() async {
-    var data = await backendA.getFriendsLocations(state.accessToken);
+  Future<void> _timerFunctions() async {
+    UserData d = state.data;
+    String userId = state.data.id;
+    var pos = await LocationAdapter.determinePosition();
 
-    //TODO Friend data timer
+    d = d.copyWith(latitude: pos.latitude.toString(),longitude: pos.longitude.toString() );
+
+    await firebaseA.updateLocation(userId,d.latitude,d.longitude);
+
+    var friends = await firebaseA.getFriends(userId);
+
+    state = state.copyWith(data: d,friends: friends);
   }
 
   Future<void> fetchRequests() async {
-    var data = await backendA.getInvites(state.accessToken,state.data.id);
+    String id = state.data.id;
 
-    //TODO Requests data
+    List<Users> userL = await Future.wait([
+      firebaseA.getRequests(id,true),
+      firebaseA.getRequests(id,false),
+    ]);
+
+    state = state.copyWith(receivedRequests: userL.last,sentRequests: userL.first);
   }
 
+  Future<Users> findUser(String user) async {
+    return await firebaseA.findUsers(user);
+  }
+
+  Future<void> sendRequest(String friendId) async {
+    var sent = state.sentRequests;
+
+    try {
+      var ret = await firebaseA.sendRequest(state.data.id,friendId);
+
+      sent.add(ret);
+    } on String catch(e) {
+      rethrow;
+    }
+
+    state = state.copyWith(sentRequests: sent);
+  }
+
+  Future<void> acceptRequest(int index) async {
+    var rec = state.receivedRequests;
+
+      await firebaseA.addFriend(state.data.id,rec.elementAt(index).id);
+
+      await fetchRequests();
+  }
+
+  Future<void> declineRequest(int index) async {
+    var rec = state.receivedRequests;
+
+      await firebaseA.declineFriend(state.data.id,rec.elementAt(index).id);
+
+      await fetchRequests();
+  }
+  
 }
 
-final userManager = StateNotifierProvider<UserManager,UserModel>((ref) {
+final userDataManager = Provider<UserData>((ref) {
+  final userModel = ref.watch(userManager);
+  return userModel.data;
+});
+
+final receivedReqManager = Provider<Users>((ref) {
+  final userModel = ref.watch(userManager);
+  return userModel.receivedRequests;
+});
+
+final sentReqManager = Provider<Users>((ref) {
+  final userModel = ref.watch(userManager);
+  return userModel.sentRequests;
+});
+
+final friendsManager = Provider<Users>((ref) {
+  final userModel = ref.watch(userManager);
+  return userModel.friends;
+});
+
+final userManager = StateNotifierProvider<UserManager,UserModel>( (ref) {
   return UserManager(ref);
 });
