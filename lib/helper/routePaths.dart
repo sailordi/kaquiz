@@ -4,6 +4,6 @@ class RoutePaths {
 
   static String locations() { return "/locations"; }
 
-  static String invites() { return "/invites"; }
+  static String profile() { return "/profile"; }
 
 }

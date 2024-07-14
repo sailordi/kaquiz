@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../models/userData.dart';
+import 'imageWidget.dart';
 
 class LocationWidget extends StatelessWidget {
   final UserData userData;
@@ -16,14 +17,7 @@ class LocationWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                height: 50,
-                child: CachedNetworkImage(
-                  imageUrl: userData.profilePicUrl,
-                  placeholder: (context, url) => const CircularProgressIndicator(),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
-                ),
-              )
+              ImageWidget(url: userData.profilePicUrl, height: 50),
             ],
           ),
           Row(

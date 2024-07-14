@@ -6,7 +6,7 @@ import 'firebase_options.dart';
 
 import '../../helper/myTheme.dart';
 import '../../helper/routePaths.dart';
-import '../../views/invites/invitesView.dart';
+import '../../views/profile/profileView.dart';
 import '../../views/locations/locationsView.dart';
 import '../../views/auth/authView.dart';
 
@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
           routes: {
             RoutePaths.auth(): (context) => const AuthView(),
             RoutePaths.locations(): (context) => const LocationsView(),
-            RoutePaths.invites() : (context) => const InvitesView()
+            RoutePaths.profile() : (context) => const ProfileView()
           },
           debugShowCheckedModeBanner: false,
         )

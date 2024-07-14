@@ -139,15 +139,18 @@ class UserManager extends StateNotifier<UserModel> {
     state = state.copyWith(receivedRequests: userL.last,sentRequests: userL.first);
   }
 
-  Future<Users> findUser(String user) async {
-    return await firebaseA.findUsers(user);
+  Future<void> findUser(String user) async {
+    var users =  await firebaseA.findUsers(user);
+
+      state = state.copyWith(foundUsers: users);
   }
 
-  Future<void> sendRequest(String friendId) async {
+  Future<void> sendRequest(int index) async {
     var sent = state.sentRequests;
+    var foundU = state.foundUsers;
 
     try {
-      var ret = await firebaseA.sendRequest(state.data.id,friendId);
+      var ret = await firebaseA.sendRequest(state.data.id,foundU.elementAt(index).id );
 
       sent.add(ret);
     } on String catch(e) {
@@ -159,8 +162,13 @@ class UserManager extends StateNotifier<UserModel> {
 
   Future<void> acceptRequest(int index) async {
     var rec = state.receivedRequests;
+    var friends = state.friends;
 
-      await firebaseA.addFriend(state.data.id,rec.elementAt(index).id);
+      var user = await firebaseA.addFriend(state.data.id,rec.elementAt(index).id);
+
+      friends.add(user);
+
+      state = state.copyWith(friends: friends);
 
       await fetchRequests();
   }
@@ -172,7 +180,17 @@ class UserManager extends StateNotifier<UserModel> {
 
       await fetchRequests();
   }
-  
+
+  Future<void> removeFriend(int index) async {
+    var friends = state.friends;
+
+      await firebaseA.removeFriend(state.data.id,friends.elementAt(index).id );
+
+      friends.remove(friends.elementAt(index) );
+
+      state = state.copyWith(friends: friends);
+  }
+
 }
 
 final userDataManager = Provider<UserData>((ref) {
@@ -193,6 +211,11 @@ final sentReqManager = Provider<Users>((ref) {
 final friendsManager = Provider<Users>((ref) {
   final userModel = ref.watch(userManager);
   return userModel.friends;
+});
+
+final foundUsersManager = Provider<Users>((ref) {
+  final userModel = ref.watch(userManager);
+  return userModel.foundUsers;
 });
 
 final userManager = StateNotifierProvider<UserManager,UserModel>( (ref) {

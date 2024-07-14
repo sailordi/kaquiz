@@ -49,11 +49,11 @@ class _DrawerWidgetState extends ConsumerState<DrawerWidget> {
                     leading: Icon(Icons.person,
                       color: Theme.of(context).colorScheme.inversePrimary,
                     ),
-                    title: const Text("I N V I T E S"),
+                    title: const Text("P R O F I L E"),
                     onTap: () {
                       Navigator.pop(context);
                       ref.read(userManager.notifier).fetchRequests();
-                      Navigator.pushNamed(context,RoutePaths.invites() );
+                      Navigator.pushNamed(context,RoutePaths.profile() );
                     },
                   ),
                 ),
