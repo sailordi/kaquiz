@@ -53,7 +53,9 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
 
                           }
                         }
-                    )
+                    ),
+                    (users.length-1 == index) ? const SizedBox() :
+                    const SizedBox(height: 20,)
                   ],
                 );
               }
@@ -74,7 +76,9 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
               itemBuilder: (context,index) {
                 return Column(
                   children: [
-                    RequestWidget(received: false,user: users[index],accept: () {  },decline: () {} )
+                    RequestWidget(received: false,user: users[index],accept: () {  },decline: () {} ),
+                    (users.length-1 == index) ? const SizedBox() :
+                    const SizedBox(height: 20,)
                   ],
                 );
               }
@@ -96,13 +100,15 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
                 return Column(
                   children: [
                     RequestWidget(received: true,user: users[index],
-                    accept: () async {
-                      await ref.read(userManager.notifier).acceptRequest(index);
-                    },
-                    decline: () async {
-                      await ref.read(userManager.notifier).declineRequest(index);
-                    }
-                    )
+                      accept: () async {
+                        await ref.read(userManager.notifier).acceptRequest(index);
+                      },
+                      decline: () async {
+                        await ref.read(userManager.notifier).declineRequest(index);
+                      }
+                    ),
+                    (users.length-1 == index) ? const SizedBox() :
+                    const SizedBox(height: 20,)
                   ],
                 );
               }
@@ -133,7 +139,9 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
 
                           }
                         }
-                    )
+                    ),
+                    (users.length-1 == index) ? const SizedBox() :
+                    const SizedBox(height: 20,)
                   ],
                 );
               }
