@@ -128,6 +128,12 @@ class FirebaseAdapter {
   Future<UserData> addFriend(String userId,String friendId) async {
     var userF = _fiendRef(userId);
     var friendF = _fiendRef(friendId);
+    var friend = await userF.doc(friendId).get();
+
+    if(!friend.exists) {
+      var user = await getUser(friendId);
+      throw "Error: ${user.userName}(${user.email}) has already been added as a friend";
+    }
 
     await Future.wait([
       userF.doc(friendId).set({"id":friendId}),
@@ -151,9 +157,16 @@ class FirebaseAdapter {
     var userF = _fiendRef(userId);
     var friendF = _fiendRef(friendId);
 
+    var friend = await userF.doc(friendId).get();
+
+    if(!friend.exists) {
+      var user = await getUser(friendId);
+      throw "Error: ${user.userName}(${user.email}) has already been removed";
+    }
+
     await Future.wait([
       userF.doc(friendId).delete(),
-      friendF.doc(friendId).delete(),
+      friendF.doc(userId).delete(),
     ]);
 
   }
