@@ -136,7 +136,7 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
     );
   }
 
-  dynamic tabContainer(BuildContext context,Users friends) {
+  dynamic tabContainer(BuildContext context,UserData user,Users friends) {
     return TabContainer(
       controller: _tabController,
       tabEdge: TabEdge.top,
@@ -169,7 +169,7 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
         ),
         SizedBox(
             height: MediaQuery.of(context).size.height-320,
-            child: friendMap(friends)
+            child: friendMap(user,friends)
         ),
       ],
     );
@@ -190,7 +190,7 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
             children: [
              yourData(userData),
               const SizedBox(height: 10,),
-              tabContainer(context,friendsData)
+              tabContainer(context,userData,friendsData)
             ],
           )
       );
