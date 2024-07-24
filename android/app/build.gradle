@@ -26,7 +26,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.example.kahoot"
+    namespace "com.example.kaquiz"
     compileSdk flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 

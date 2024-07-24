@@ -1,4 +1,4 @@
-package com.example.kahoot
+package com.example.kaquiz
 
 import io.flutter.embedding.android.FlutterActivity
 

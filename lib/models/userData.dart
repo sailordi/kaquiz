@@ -1,5 +1,4 @@
-
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 String _mocProfilePic = "https://firebasestorage.googleapis.com/v0/b/kahoot-a7063.appspot.com/o/default.png?alt=media&token=ddc5c54a-1921-4332-82ce-40308ebf3809";
 

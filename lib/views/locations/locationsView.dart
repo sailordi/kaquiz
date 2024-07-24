@@ -1,15 +1,11 @@
-import 'dart:async';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:kaquiz/widgets/imageWidget.dart';
 import 'package:tab_container/tab_container.dart';
 
 import '../../manager/userManager.dart';
 import '../../models/userData.dart';
-import '../../options.dart';
 import '../../widgets/drawerWidget.dart';
 import '../../widgets/locationWidget.dart';
 
@@ -37,44 +33,27 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
 
   Marker createMarker(UserData d) {
     return Marker(
-          point: d.pos(),
-          child: Row(
-          children: [
-            const Icon(
-              Icons.pin_drop,
-              color: Colors.red,
-              size: 60,
-            ),
-            Text("${d.userName}(${d.email})")
-          ],
-        )
+          markerId: MarkerId("${d.userName}(${d.email})"),
+          icon: BitmapDescriptor.defaultMarker,
+          position: d.pos(),
     );
 
   }
 
   dynamic friendMap(UserData user,Users friends) {
-    List<Marker> markers = friends.map( (f) => createMarker(f) ).toList();
+    Set<Marker> markers = friends.map( (f) => createMarker(f) ).toSet();
 
     markers.add(createMarker(user) );
 
     return Flexible(
-        child: FlutterMap(
-          options: MapOptions(
-            initialCenter: user.pos(),
-            initialZoom: 13.0,
-            minZoom: 5,
-            maxZoom: 18
-          ), children: [
-            TileLayer(
-              urlTemplate: urlTemplate+accessToken,
-              fallbackUrl: urlTemplate+accessToken,
-              additionalOptions: const{
-                'id':mapStyleOutdoor
-              },
-            ),
-          MarkerLayer(markers: markers)
-        ],
-        )
+        child: GoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: user.pos(),
+            zoom: 13.0
+          ),
+          minMaxZoomPreference: const MinMaxZoomPreference(5,18),
+          markers: markers,
+        ),
     );
 
   }
