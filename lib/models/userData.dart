@@ -36,7 +36,6 @@ class UserData {
   }
 
   LatLng pos() {
-    print("(User.pos): lat : $latitude, long: $longitude");
       return LatLng(double.parse(latitude),double.parse(longitude) );
   }
 

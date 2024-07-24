@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:kaquiz/helper/helper.dart';
 import 'package:kaquiz/widgets/imageWidget.dart';
 import 'package:tab_container/tab_container.dart';
 
@@ -34,6 +35,7 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
   Marker createMarker(UserData d) {
     return Marker(
           markerId: MarkerId("${d.userName}(${d.email})"),
+          onTap: () { Helper.messageToUser("Location lat/long: ${d.pos().latitude}/${d.pos().longitude}",context); },
           icon: BitmapDescriptor.defaultMarker,
           position: d.pos(),
     );
