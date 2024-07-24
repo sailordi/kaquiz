@@ -30,6 +30,7 @@ class _AuthViewState extends ConsumerState<AuthView> {
   }
 
   void navigate(BuildContext context) async {
+    await ref.read(userManager.notifier).initData();
     if(context.mounted) {
       Navigator.pushNamed(context,RoutePaths.locations() );
     }

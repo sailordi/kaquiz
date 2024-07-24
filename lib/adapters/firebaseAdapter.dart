@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../models/userData.dart';
 import '../../models/userModel.dart';
@@ -65,7 +66,7 @@ class FirebaseAdapter {
 
   }
 
-  Future<UserModel> logIn(String email,String password) async {
+  Future<String> logIn(String email,String password) async {
     QuerySnapshot result = await _users
         .where("email", isEqualTo: email)
         .limit(1)  // We only need to check if at least one document exists
@@ -81,7 +82,7 @@ class FirebaseAdapter {
       var cred = await _auth.signInWithEmailAndPassword(email: email,password: password);
       String id = cred.user!.uid;
 
-      return await _getYourData(id);
+      return id;
     } on FirebaseAuthException catch (e) {
       throw Exception(e.toString() );
     }
@@ -92,8 +93,9 @@ class FirebaseAdapter {
     await _auth.signOut();
   }
 
-  Future<UserModel> _getYourData(String userId) async {
-    UserData data = await getUser(userId);
+  Future<UserModel> getYourData() async {
+    var userId = _auth.currentUser!.uid;
+    UserData data = await getUser(userId,withLocation: true);
     Users receivedRequests = [];
     Users sentRequests = [];
     Users friends = [];

@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kaquiz/widgets/imageWidget.dart';
 import 'package:tab_container/tab_container.dart';
 
 import '../../manager/userManager.dart';
@@ -101,17 +102,11 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
 
     return Column(
       children: [
+        const SizedBox(height: 5,),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(
-              height: 100,
-              child: CachedNetworkImage(
-                imageUrl: data.profilePicUrl,
-                placeholder: (context, url) => const CircularProgressIndicator(),
-                errorWidget: (context, url, error) => const Icon(Icons.error),
-              ),
-            )
+            ImageWidget(url: data.profilePicUrl, height: 60)
           ],
         ),
         Row(
@@ -134,6 +129,7 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
         )
       ],
     );
+
   }
 
   dynamic tabContainer(BuildContext context,UserData user,Users friends) {
@@ -164,11 +160,11 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
       ],
       children: [
         SizedBox(
-            height: MediaQuery.of(context).size.height-320,
+            height: MediaQuery.of(context).size.height-350,
             child: friendList(friends)
         ),
         SizedBox(
-            height: MediaQuery.of(context).size.height-320,
+            height: MediaQuery.of(context).size.height-350,
             child: friendMap(user,friends)
         ),
       ],

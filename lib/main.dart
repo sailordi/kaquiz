@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'adapters/locationAdapter.dart';
 import 'firebase_options.dart';
 
 import '../../helper/myTheme.dart';
@@ -20,6 +21,8 @@ void main() async {
   accessToken = dotenv.env['ACCESS_TOKEN'] ?? 'pk.eyJ1Ijoic2FpbG9yZGkiLCJhIjoiY2x5cDlzb3E2MGxpdzJvcGxtazB1YzhkYSJ9.HOdbObe6FDV7gfV2nv-DCQ';
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await LocationAdapter.determinePosition();
 
   runApp(const MyApp());
 }
