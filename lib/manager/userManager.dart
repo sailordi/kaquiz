@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -14,6 +16,7 @@ class UserManager extends StateNotifier<UserModel> {
   final StateNotifierProviderRef ref;
   late FirebaseAdapter firebaseA = FirebaseAdapter();
   late TimerAdapter timerA;
+  StreamSubscription<QuerySnapshot<Object?> >? _friendStream,_receivedRequestsStream,_sentRequestsStream;
 
   UserManager(this.ref) : super(UserModel.empty() ){
     timerA = TimerAdapter(minutes: 10,onTiger: _timerFunctions);
@@ -33,7 +36,8 @@ class UserManager extends StateNotifier<UserModel> {
         throw "Error: Could not log in with google could not get auth";
       }
 
-      String? email = user.email,id = user.id;
+      String email = user.email;
+      String id = user.id;
       String? accessToken = auth?.accessToken;
       String? idToken = auth.idToken;
 
@@ -42,11 +46,8 @@ class UserManager extends StateNotifier<UserModel> {
           idToken: idToken
       );
 
-      var userD = await _login(cred,email,accessToken!,id);
+      await _login(cred,email,accessToken!,id);
 
-      state = userD;
-
-      timerA.start();
     }catch(e) {
       throw "Error: Could not log in with google\n${e.toString()}";
     }
@@ -69,7 +70,8 @@ class UserManager extends StateNotifier<UserModel> {
       }
 
 
-      String email = user.email,id = user.id;
+      String email = user.email;
+      String id = user.id;
       String? accessToken = auth?.accessToken;
       String? idToken = auth.idToken;
 
@@ -80,11 +82,8 @@ class UserManager extends StateNotifier<UserModel> {
 
       await firebaseA.register(cred,email,username,accessToken!,id,image);
 
-      var userD = await _login(cred,email,accessToken!,id);
+      await _login(cred,email,accessToken!,id);
 
-      state = userD;
-
-      timerA.start();
     } catch(e) {
       throw "Error: Could not register with google\n${e.toString()}";
     }
@@ -95,10 +94,23 @@ class UserManager extends StateNotifier<UserModel> {
 
     state = UserModel.empty();
 
+    if(_friendStream != null) {
+      _friendStream?.cancel();
+      _friendStream = null;
+    }
+    if(_receivedRequestsStream != null) {
+      _receivedRequestsStream?.cancel();
+      _receivedRequestsStream = null;
+    }
+    if(_sentRequestsStream != null) {
+      _sentRequestsStream?.cancel();
+      _sentRequestsStream = null;
+    }
+
     GoogleSignIn().signOut();
   }
 
-  Future<UserModel> _login(AuthCredential credential,String email,String accessToken,String id) async {
+  Future<void> _login(AuthCredential credential,String email,String accessToken,String id) async {
     try {
       await firebaseA.logIn(credential,email);
     } catch(e) {
@@ -107,7 +119,27 @@ class UserManager extends StateNotifier<UserModel> {
 
     var userD = await firebaseA.getYourData(id);
 
-    return userD.copyWith(accessToken: accessToken);
+    _friendStream = firebaseA.friendStream(userD.data.id,(String userId) async {
+      var friends = await firebaseA.getFriends(userId);
+
+      state = state.copyWith(friends: friends);
+    });
+
+    _sentRequestsStream = firebaseA.sentRequestsStream(userD.data.id,(String userId) async {
+      var req = await firebaseA.getRequests(userId,true);
+
+      state = state.copyWith(sentRequests: req);
+    });
+
+    _receivedRequestsStream = firebaseA.receivedRequestsStream(userD.data.id,(String userId) async {
+      var req = await firebaseA.getRequests(userId,false);
+
+      state = state.copyWith(sentRequests: req);
+    });
+
+    state = userD;
+
+    timerA.start();
   }
 
   Future<void> fetchFriends() async {
@@ -150,9 +182,8 @@ class UserManager extends StateNotifier<UserModel> {
     var foundU = state.foundUsers;
 
     try {
-      var ret = await firebaseA.sendRequest(state.data.id,foundU.elementAt(index).id );
+      await firebaseA.sendRequest(state.data.id,foundU.elementAt(index).id );
 
-      sent.add(ret);
     } on String catch(e) {
       rethrow;
     }
@@ -164,31 +195,19 @@ class UserManager extends StateNotifier<UserModel> {
     var rec = state.receivedRequests;
     var friends = state.friends;
 
-      var user = await firebaseA.addFriend(state.data.id,rec.elementAt(index).id);
-
-      friends.add(user);
-
-      state = state.copyWith(friends: friends);
-
-      await fetchRequests();
+      firebaseA.addFriend(state.data.id,rec.elementAt(index).id);
   }
 
   Future<void> declineRequest(int index) async {
     var rec = state.receivedRequests;
 
-      await firebaseA.declineFriend(state.data.id,rec.elementAt(index).id);
-
-      await fetchRequests();
+      await firebaseA.declineRequests(state.data.id,rec.elementAt(index).id);
   }
 
   Future<void> removeFriend(int index) async {
     var friends = state.friends;
 
       await firebaseA.removeFriend(state.data.id,friends.elementAt(index).id );
-
-      friends.remove(friends.elementAt(index) );
-
-      state = state.copyWith(friends: friends);
   }
 
 }

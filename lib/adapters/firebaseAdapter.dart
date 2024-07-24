@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
@@ -125,7 +126,7 @@ class FirebaseAdapter {
 
   }
 
-  Future<UserData> addFriend(String userId,String friendId) async {
+  Future<void>  addFriend(String userId,String friendId) async {
     var userF = _fiendRef(userId);
     var friendF = _fiendRef(friendId);
     var friend = await userF.doc(friendId).get();
@@ -140,17 +141,6 @@ class FirebaseAdapter {
       friendF.doc(userId).set({"id":userId}),
     ]);
 
-    var requestQ = await _requests.where('sender', isEqualTo: userId)
-        .where('receiver', isEqualTo: friendId)
-        .get();
-
-    for(var d in requestQ.docs) {
-      await d.reference.delete();
-    }
-
-    var user = await getUser(friendId,withLocation: true);
-
-    return user;
   }
 
   Future<void> removeFriend(String userId,String friendId) async {
@@ -171,7 +161,15 @@ class FirebaseAdapter {
 
   }
 
-  Future<UserData> sendRequest(String userId,String toId) async {
+  StreamSubscription<QuerySnapshot<Object?> > friendStream(String userId,void Function(String) friendsChange) {
+    return _fiendRef(userId).snapshots(includeMetadataChanges: false).listen(
+            (event) { friendsChange(userId); },
+            onError: (error) { print("Friend stream failed:\n$error"); }
+    );
+
+  }
+
+  Future<void> sendRequest(String userId,String toId) async {
     var requestQ = await _requests.where('sender', isEqualTo: userId)
                           .where('receiver', isEqualTo: toId)
                           .get();
@@ -189,10 +187,9 @@ class FirebaseAdapter {
     }
 
     await _requests.doc().set({"sender":userId,"receiver":toId});
-    return await getUser(toId);
   }
 
-  Future<void> declineFriend(String userId,String friendId) async {
+  Future<void> declineRequests(String userId,String friendId) async {
     var requestQ = await _requests.where('sender', isEqualTo: userId)
                           .where('receiver', isEqualTo: friendId)
                           .get();
@@ -229,6 +226,24 @@ class FirebaseAdapter {
       }
 
       return ret;
+  }
+
+  StreamSubscription<QuerySnapshot<Object?> > receivedRequestsStream(String userId,void Function(String) receivedChange) {
+    return _requests.where('receiver',isEqualTo: userId)
+        .snapshots(includeMetadataChanges: false)
+        .listen(
+            (event) { receivedChange(userId); },
+            onError: (error) { print("Friend stream failed:\n$error"); }
+        );
+  }
+
+  StreamSubscription<QuerySnapshot<Object?> > sentRequestsStream(String userId,void Function(String) sentChange) {
+    return _requests.where('sent',isEqualTo: userId)
+        .snapshots(includeMetadataChanges: false)
+        .listen(
+            (event) { sentChange(userId); },
+        onError: (error) { print("Friend stream failed:\n$error"); }
+    );
   }
 
   Future<Users> findUsers(String user) async{
