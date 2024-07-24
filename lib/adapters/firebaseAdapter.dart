@@ -23,7 +23,7 @@ class FirebaseAdapter {
     return _users.doc(userId).collection("friends");
   }
 
-  Future<void> register(AuthCredential credential,String email,String username,String accessToken,String idToken,File? image) async {
+  Future<void> register(String email,String password,String username,File? image) async {
     QuerySnapshot result = await _users
         .where("email", isEqualTo: email)
         .limit(1)  // We only need to check if at least one document exists
@@ -35,9 +35,9 @@ class FirebaseAdapter {
       throw "Error: Email already registered";
     }
 
-    _auth.signInWithCredential(credential);
-
     try {
+      final cred = await _auth.createUserWithEmailAndPassword(email: email,password: password);
+      String id = cred.user!.uid;
       String imageUrl = "";
       UploadTask uploadTask;
 
@@ -45,27 +45,27 @@ class FirebaseAdapter {
         var ref = _storage.ref().child('defaultProfileImage.png');
         imageUrl = await ref.getDownloadURL();
       }else {
-        var ref = _storage.ref().child("profileImage").child(idToken);
+        var ref = _storage.ref().child("profileImage").child(id);
 
         uploadTask = ref.putFile(image);
         final taskSnapshot = await uploadTask.whenComplete(() {});
         imageUrl = await taskSnapshot.ref.getDownloadURL();
       }
 
-      _users.doc(idToken).set({
-        "id":idToken,
+      _users.doc(id).set({
+        "id":id,
         "email":email,
         "username":username,
         "profileUrl":imageUrl,
       });
 
     } on FirebaseAuthException catch(e) {
-      rethrow;
+      throw Exception(e.toString() );
     }
 
   }
 
-  Future<void> logIn(AuthCredential credential,String email) async {
+  Future<UserModel> logIn(String email,String password) async {
     QuerySnapshot result = await _users
         .where("email", isEqualTo: email)
         .limit(1)  // We only need to check if at least one document exists
@@ -77,14 +77,22 @@ class FirebaseAdapter {
       throw "Error: Email is not registered can not log in";
     }
 
-   await _auth.signInWithCredential(credential);
+    try {
+      var cred = await _auth.signInWithEmailAndPassword(email: email,password: password);
+      String id = cred.user!.uid;
+
+      return await _getYourData(id);
+    } on FirebaseAuthException catch (e) {
+      throw Exception(e.toString() );
+    }
+
   }
 
   Future<void> logOut() async {
     await _auth.signOut();
   }
 
-  Future<UserModel> getYourData(String userId) async {
+  Future<UserModel> _getYourData(String userId) async {
     UserData data = await getUser(userId);
     Users receivedRequests = [];
     Users sentRequests = [];

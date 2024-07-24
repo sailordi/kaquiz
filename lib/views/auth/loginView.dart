@@ -1,4 +1,4 @@
-   import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,17 +17,46 @@ class LoginView extends ConsumerStatefulWidget {
 }
 
 class _LoginViewState extends ConsumerState<LoginView> {
+  final TextEditingController emailC = TextEditingController();
+  final TextEditingController passwordC = TextEditingController();
 
-  void loginFirebase() async {
+  String errorCheck() {
+    String ret = "";
+
+    if(emailC.text.isEmpty) {
+      if(ret.isNotEmpty) { ret += "\n"; }
+      ret += "No email entered";
+    }
+    if(passwordC.text.isEmpty) {
+      if(ret.isNotEmpty) { ret += "\n"; }
+      ret += "No password entered";
+    }
+
+    return ret;
+  }
+
+  void login() async {
+    Helper.circleDialog(context);
+
+    String err = errorCheck();
+
+    if(err.isNotEmpty) {
+      Navigator.pop(context);
+
+      Helper.messageToUser(err,context);
+
+      return;
+    }
+
     try {
-      await ref.read(userManager.notifier).logIn();
+      await ref.read(userManager.notifier).logIn(emailC.text,passwordC.text);
       if(mounted) {
         Navigator.pop(context);
       }
-    } on FirebaseAuthException catch(e) {
+    } on Exception catch(e) {
       if(mounted) {
         Navigator.pop(context);
-        Helper.messageToUser(e.code,context);
+        Helper.messageToUser(e.toString(),context);
       }
     }
 
@@ -48,8 +77,14 @@ class _LoginViewState extends ConsumerState<LoginView> {
               //App name
               const Text("Kaquiz",style: TextStyle(fontSize: 20) ),
               const SizedBox(height: 30,),
+              //Email
+              TextFieldWidget(hint: "Email", controller: emailC),
+              const SizedBox(height: 10,),
+              //Password
+              TextFieldWidget(hint: "Password", controller: passwordC,obscure: true),
+              const SizedBox(height: 15,),
               //Login
-              ExpandedButtonWidget(text: "Login with Google", tap: loginFirebase),
+              ExpandedButtonWidget(text: "Login", tap: login),
               const SizedBox(height: 15,),
               //Register
               Row(

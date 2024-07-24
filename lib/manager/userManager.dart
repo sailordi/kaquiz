@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../adapters/firebaseAdapter.dart';
@@ -22,76 +20,57 @@ class UserManager extends StateNotifier<UserModel> {
     timerA = TimerAdapter(minutes: 10,onTiger: _timerFunctions);
   }
 
-  Future<void> logIn() async {
+  Future<void> logIn(String email,String password) async {
+    UserModel? userD;
+
     try {
-      final GoogleSignInAccount? user = await GoogleSignIn().signIn();
-
-      if(user == null) {
-        throw "Error: Could not log in with google";
-      }
-
-      final GoogleSignInAuthentication? auth = await user?.authentication;
-
-      if(auth == null) {
-        throw "Error: Could not log in with google could not get auth";
-      }
-
-      String email = user.email;
-      String id = user.id;
-      String? accessToken = auth?.accessToken;
-      String? idToken = auth.idToken;
-
-      final cred = GoogleAuthProvider.credential(
-          accessToken: accessToken,
-          idToken: idToken
-      );
-
-      await _login(cred,email,accessToken!,id);
-
-    }catch(e) {
-      throw "Error: Could not log in with google\n${e.toString()}";
+      userD = await firebaseA.logIn(email,password);
+    } on Exception catch (e) {
+      throw Exception("Error: Could not login\n${e.toString()}");
+    } on String catch(e) {
+      throw Exception(e);
     }
 
+    _friendStream = firebaseA.friendStream(userD!.data.id,(String userId) async {
+      var friends = await firebaseA.getFriends(userId);
+
+      state = state.copyWith(friends: friends);
+    });
+
+    _sentRequestsStream = firebaseA.sentRequestsStream(userD!.data.id,(String userId) async {
+      var req = await firebaseA.getRequests(userId,true);
+
+      state = state.copyWith(sentRequests: req);
+    });
+
+    _receivedRequestsStream = firebaseA.receivedRequestsStream(userD!.data.id,(String userId) async {
+      var req = await firebaseA.getRequests(userId,false);
+
+      state = state.copyWith(sentRequests: req);
+    });
+
+    var pos =  await _updateLocation(userD!.data.id);
+
+    userD!.copyWith(data: userD!.data.copyWith(latitude: pos.$1,longitude: pos.$2) );
+
+    state = userD!;
+
+    timerA.start();
   }
 
-  Future<void> register(String username,File? image) async {
-
+  Future<void> register(String email,String password,String username,File? image) async {
     try {
-      final GoogleSignInAccount? user = await GoogleSignIn().signIn();
-
-      if(user == null) {
-        throw "Error: Could not log in with google";
-      }
-
-      final GoogleSignInAuthentication? auth = await user?.authentication;
-
-      if(auth == null) {
-        throw "Error: Could not log in with google could not get auth";
-      }
-
-
-      String email = user.email;
-      String id = user.id;
-      String? accessToken = auth?.accessToken;
-      String? idToken = auth.idToken;
-
-      final cred = GoogleAuthProvider.credential(
-          accessToken: accessToken,
-          idToken: idToken
-      );
-
-      await firebaseA.register(cred,email,username,accessToken!,id,image);
-
-      await _login(cred,email,accessToken!,id);
-
-    } catch(e) {
-      throw "Error: Could not register with google\n${e.toString()}";
+      await firebaseA.register(email,password,username,image);
+    } on Exception catch (e) {
+      throw Exception("Error: Could not register\n${e.toString()}");
+    } on String catch(e) {
+      throw Exception(e);
     }
 
+    await logIn(email,password);
   }
 
   void logOut() {
-
     state = UserModel.empty();
 
     if(_friendStream != null) {
@@ -107,43 +86,20 @@ class UserManager extends StateNotifier<UserModel> {
       _sentRequestsStream = null;
     }
 
-    GoogleSignIn().signOut();
-  }
-
-  Future<void> _login(AuthCredential credential,String email,String accessToken,String id) async {
-    try {
-      await firebaseA.logIn(credential,email);
-    } catch(e) {
-      rethrow;
-    }
-
-    var userD = await firebaseA.getYourData(id);
-
-    _friendStream = firebaseA.friendStream(userD.data.id,(String userId) async {
-      var friends = await firebaseA.getFriends(userId);
-
-      state = state.copyWith(friends: friends);
-    });
-
-    _sentRequestsStream = firebaseA.sentRequestsStream(userD.data.id,(String userId) async {
-      var req = await firebaseA.getRequests(userId,true);
-
-      state = state.copyWith(sentRequests: req);
-    });
-
-    _receivedRequestsStream = firebaseA.receivedRequestsStream(userD.data.id,(String userId) async {
-      var req = await firebaseA.getRequests(userId,false);
-
-      state = state.copyWith(sentRequests: req);
-    });
-
-    state = userD;
-
-    timerA.start();
+    firebaseA.logOut();
   }
 
   Future<void> fetchFriends() async {
     timerA.trigger();
+  }
+
+  Future<(String,String)> _updateLocation(String userId) async {
+    var pos = await LocationAdapter.determinePosition();
+    String latitude = pos.latitude.toString(),longitude = pos.longitude.toString();
+
+    await firebaseA.updateLocation(userId,latitude,longitude);
+
+    return (latitude,longitude);
   }
 
   Future<void> _timerFunctions() async {

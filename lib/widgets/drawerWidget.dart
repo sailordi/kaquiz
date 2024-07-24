@@ -52,7 +52,6 @@ class _DrawerWidgetState extends ConsumerState<DrawerWidget> {
                     title: const Text("P R O F I L E"),
                     onTap: () {
                       Navigator.pop(context);
-                      ref.read(userManager.notifier).fetchRequests();
                       Navigator.pushNamed(context,RoutePaths.profile() );
                     },
                   ),

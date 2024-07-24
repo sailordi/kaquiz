@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../adapters/imageAdapter.dart';
@@ -22,6 +21,9 @@ class RegisterView extends ConsumerStatefulWidget {
 
 class _RegisterViewState extends ConsumerState<RegisterView> {
   final TextEditingController usernameC = TextEditingController();
+  final TextEditingController emailC = TextEditingController();
+  final TextEditingController passwordC = TextEditingController();
+  final TextEditingController confirmPasswordC = TextEditingController();
   File? _profileImage;
 
   void _selectFile(File? f) {
@@ -35,6 +37,16 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
 
     if(usernameC.text.isEmpty) {
       ret += "Username is missing";
+    }
+    if(passwordC.text.isEmpty) {
+      ret += "Password is missing\n";
+    }
+    if(confirmPasswordC.text.isEmpty) {
+      ret += "Confirm password is missing\n";
+    }
+
+    if(ret.isEmpty && passwordC.text != confirmPasswordC.text) {
+      ret += "Password and confirm password does not match\n";
     }
 
     return ret;
@@ -54,21 +66,15 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
     }
 
     try{
-      await ref.read(userManager.notifier).register(usernameC.text,_profileImage);
+      await ref.read(userManager.notifier).register(emailC.text,passwordC.text,usernameC.text,_profileImage);
       if(mounted) {
         Navigator.pop(context);
       }
 
-    } on FirebaseAuthException catch(e) {
+    } on Exception catch(e) {
       if(mounted) {
         Navigator.pop(context);
-        Helper.messageToUser(e.code, context);
-      }
-
-    } on String catch(e) {
-      if(mounted) {
-        Navigator.pop(context);
-        Helper.messageToUser(e,context);
+        Helper.messageToUser(e.toString(), context);
       }
 
     }
@@ -77,17 +83,17 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
 
   dynamic selectDeselectProfileImage() {
     return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          ButtonWidget(width: 189,text: "Select profile pic", tap: () {
-            ImageAdapter.showImageSourceDialog(context,_selectFile);
-          }
-          ),
-          ButtonWidget(width: 189,text: "Deselect profile pic", tap: () {
-            _selectFile(null);
-          }),
-        ],
-      );
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        ButtonWidget(width: 189,text: "Select profile pic", tap: () {
+          ImageAdapter.showImageSourceDialog(context,_selectFile);
+        }
+        ),
+        ButtonWidget(width: 189,text: "Deselect profile pic", tap: () {
+          _selectFile(null);
+        }),
+      ],
+    );
   }
 
   dynamic profileImage() {
@@ -124,17 +130,26 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               //App name
-              const Text("Secure message",style: TextStyle(fontSize: 20) ),
-              const SizedBox(height: 30,),
+              const Text("Kquiz",style: TextStyle(fontSize: 20) ),
+              const SizedBox(height: 20,),
               //Username
               TextFieldWidget(hint: "Username", controller: usernameC),
+              const SizedBox(height: 10,),
+              //Email
+              TextFieldWidget(hint: "Email", controller: emailC),
+              const SizedBox(height: 10,),
+              //Password
+              TextFieldWidget(hint: "Password", controller: passwordC,obscure: true),
+              const SizedBox(height: 10,),
+              //Password
+              TextFieldWidget(hint: "Confirm password", controller: confirmPasswordC,obscure: true),
               const SizedBox(height: 15,),
               //Profile pic
               selectDeselectProfileImage(),
               const SizedBox(height: 5,),
-             profileImage(),
+              profileImage(),
               const SizedBox(height: 10,),
-              ExpandedButtonWidget(text: "Register with Google", tap: registerFirebase),
+              ExpandedButtonWidget(text: "Register", tap: registerFirebase),
               const SizedBox(height: 10,),
 
               Row(
