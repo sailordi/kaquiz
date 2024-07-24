@@ -10,7 +10,6 @@ import 'package:geolocator/geolocator.dart';
 import '../../models/userData.dart';
 import '../../models/userModel.dart';
 
-
 class FirebaseAdapter {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -129,11 +128,15 @@ class FirebaseAdapter {
   }
 
   Future<void> updateLocation(String userId,String latitude,String longitude) async {
-    _locations.doc(userId).set({
+    await _locations.doc(userId).set({
       "latitude":latitude,
       "longitude":longitude,
     });
 
+  }
+
+  Future<void> updateLocationWithAuth(String latitude,String longitude) async {
+    await updateLocation(_auth.currentUser!.uid,latitude,longitude);
   }
 
   Future<void>  addFriend(String userId,String friendId) async {

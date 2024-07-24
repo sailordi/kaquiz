@@ -31,8 +31,6 @@ class UserManager extends StateNotifier<UserModel> {
       throw Exception(e);
     }
 
-    await _updateLocation(userId);
-
     _friendStream = firebaseA.friendStream(userId,(String userId) async {
       var friends = await firebaseA.getFriends(userId);
 
@@ -67,6 +65,7 @@ class UserManager extends StateNotifier<UserModel> {
   }
 
   Future<void> initData() async {
+    await _updateLocation();
     state = await firebaseA.getYourData();
   }
 
@@ -97,7 +96,7 @@ class UserManager extends StateNotifier<UserModel> {
     var pos = await LocationAdapter.determinePosition();
     String latitude = pos.latitude.toString(),longitude = pos.longitude.toString();
 
-    await firebaseA.updateLocation(userId,latitude,longitude);
+    await firebaseA.updateLocationWithAuth(latitude,longitude);
   }
 
   Future<void> _timerFunctions() async {

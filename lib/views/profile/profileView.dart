@@ -174,6 +174,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
         Theme.of(context).colorScheme.primary,
         Theme.of(context).colorScheme.primary,
         Theme.of(context).colorScheme.primary,
+        Theme.of(context).colorScheme.primary,
       ],
       tabs: const [
         Text('Friends'),
