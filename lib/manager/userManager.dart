@@ -92,7 +92,7 @@ class UserManager extends StateNotifier<UserModel> {
     timerA.trigger();
   }
 
-  Future<void> _updateLocation(String userId) async {
+  Future<void> _updateLocation() async {
     var pos = await LocationAdapter.determinePosition();
     String latitude = pos.latitude.toString(),longitude = pos.longitude.toString();
 

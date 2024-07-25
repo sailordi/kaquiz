@@ -3,12 +3,38 @@ import 'package:flutter/material.dart';
 class ButtonWidget extends StatelessWidget {
   final String text;
   final void Function()? tap;
-  final double width;
+  final Color?  color;
+  final double fontSize;
+  final double? height;
+  final double? width;
 
-  const ButtonWidget({super.key,required this.width,required this.text,required this.tap});
+  const ButtonWidget({super.key,required this.text,required this.tap,this.width,this.height,this.fontSize = 20,this.color});
 
-  @override
-  Widget build(BuildContext context) {
+  dynamic hasWidthHeight(BuildContext context) {
+    return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          GestureDetector(
+            onTap: tap,
+            child: Container(
+              width: width,
+              height: height,
+              decoration: BoxDecoration(
+                color: (color != null) ? color : Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(25),
+              child: Text(text,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold,fontSize: fontSize)
+              ),
+            ),
+          )
+        ]
+    );
+  }
+
+  dynamic hasWidth(BuildContext context) {
     return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -17,13 +43,67 @@ class ButtonWidget extends StatelessWidget {
             child: Container(
               width: width,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
+                color: (color != null) ? color : Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
               padding: const EdgeInsets.all(25),
               child: Text(text,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontWeight: FontWeight.bold,fontSize: 20)
+                  style: TextStyle(fontWeight: FontWeight.bold,fontSize: fontSize)
+              ),
+            ),
+          )
+        ]
+    );
+  }
+
+  dynamic hasHeight(BuildContext context) {
+    return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          GestureDetector(
+            onTap: tap,
+            child: Container(
+              height: height,
+              decoration: BoxDecoration(
+                color: (color != null) ? color : Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(25),
+              child: Text(text,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold,fontSize: fontSize)
+              ),
+            ),
+          )
+        ]
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if(width != null && height != null) {
+      return hasWidthHeight(context);
+    }else if(width != null && height == null) {
+      return hasWidth(context);
+    }else if(width == null && height != null) {
+      return hasHeight(context);
+    }
+
+    return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          GestureDetector(
+            onTap: tap,
+            child: Container(
+              decoration: BoxDecoration(
+                color: (color != null) ? color : Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(25),
+              child: Text(text,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold,fontSize: fontSize)
               ),
             ),
           )

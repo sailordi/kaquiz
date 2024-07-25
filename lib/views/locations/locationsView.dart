@@ -127,8 +127,8 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
         color: Colors.blue,
         fontSize: 15.0,
       ),
-      unselectedTextStyle: const TextStyle(
-        color: Colors.black,
+      unselectedTextStyle: TextStyle(
+        color: Theme.of(context).colorScheme.inversePrimary,
         fontSize: 13.0,
       ),
       colors: [

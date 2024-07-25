@@ -166,8 +166,8 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
         color: Colors.blue,
         fontSize: 15.0,
       ),
-      unselectedTextStyle: const TextStyle(
-        color: Colors.black,
+      unselectedTextStyle: TextStyle(
+        color: Theme.of(context).colorScheme.inversePrimary,
         fontSize: 13.0,
       ),
       colors: [
@@ -214,7 +214,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text("Kahoot: ${udM.userName}(${udM.email})'s profile"),
+        title: Text("Kaquiz: ${udM.userName}(${udM.email})'s profile"),
       ),
       body: ListView(
         children: [
@@ -224,11 +224,15 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
               const SizedBox(width: 5,),
               ImageWidget(url: udM.profilePicUrl, height: 50),
               const SizedBox(width: 5,),
-              Text("Friends: ${friendsM.length}"),
-              const SizedBox(width: 5,),
-              Text("Received requests: ${receivedReqM.length}"),
-              const SizedBox(width: 5,),
-              Text("Sent requests: ${sentReqM.length}"),
+              Column(
+                children: [
+                  Text("Friends: ${friendsM.length}"),
+                  const SizedBox(width: 5,),
+                  Text("Received requests: ${receivedReqM.length}"),
+                  const SizedBox(width: 5,),
+                  Text("Sent requests: ${sentReqM.length}"),
+                ],
+              ),
               const SizedBox(width: 5,),
             ],
           ),

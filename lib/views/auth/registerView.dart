@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../adapters/imageAdapter.dart';
 import '../../helper/helper.dart';
 import '../../manager/userManager.dart';
+import '../../widgets/actionButton.dart';
 import '../../widgets/buttonWidget.dart';
 import '../../widgets/expandedButtonWidget.dart';
 import '../../widgets/textFieldWidget.dart';
@@ -26,13 +27,17 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
   final TextEditingController confirmPasswordC = TextEditingController();
   File? _profileImage;
 
+  void _deselectFile() {
+    _selectFile(null);
+  }
+
   void _selectFile(File? f) {
     setState(() {
       _profileImage = f;
     });
   }
 
-  String errorCheck() {
+  String _errorCheck() {
     String ret = "";
 
     if(usernameC.text.isEmpty) {
@@ -52,10 +57,10 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
     return ret;
   }
 
-  void registerFirebase() async {
+  void _registerFirebase() async {
     Helper.circleDialog(context);
 
-    String err = errorCheck();
+    String err = _errorCheck();
 
     if(err.isNotEmpty) {
       Navigator.pop(context);
@@ -81,22 +86,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
 
   }
 
-  dynamic selectDeselectProfileImage() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        ButtonWidget(width: 189,text: "Select profile pic", tap: () {
-          ImageAdapter.showImageSourceDialog(context,_selectFile);
-        }
-        ),
-        ButtonWidget(width: 189,text: "Deselect profile pic", tap: () {
-          _selectFile(null);
-        }),
-      ],
-    );
-  }
-
-  dynamic profileImage() {
+  dynamic _profileImageWidget() {
     if(_profileImage != null)  {
       return SizedBox(
           height: 190,
@@ -115,6 +105,8 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          ActionButtonWidget(text: "Register", tap: _registerFirebase),
+          (_profileImage == null) ? const SizedBox() : ActionButtonWidget(text: "Deselect", tap: _deselectFile),
           IconButton(
             icon: const Icon(Icons.camera),
             onPressed: () {
@@ -126,49 +118,46 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              //App name
-              const Text("Kquiz",style: TextStyle(fontSize: 20) ),
-              const SizedBox(height: 20,),
-              //Username
-              TextFieldWidget(hint: "Username", controller: usernameC),
-              const SizedBox(height: 10,),
-              //Email
-              TextFieldWidget(hint: "Email", controller: emailC),
-              const SizedBox(height: 10,),
-              //Password
-              TextFieldWidget(hint: "Password", controller: passwordC,obscure: true),
-              const SizedBox(height: 10,),
-              //Password
-              TextFieldWidget(hint: "Confirm password", controller: confirmPasswordC,obscure: true),
-              const SizedBox(height: 15,),
-              //Profile pic
-              selectDeselectProfileImage(),
-              const SizedBox(height: 5,),
-              profileImage(),
-              const SizedBox(height: 10,),
-              ExpandedButtonWidget(text: "Register", tap: registerFirebase),
-              const SizedBox(height: 10,),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("Have an account?"),
-                  GestureDetector(
-                    onTap: widget.tap,
-                    child: const Text(" Login here",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  )
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child:  Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                //App name
+                const Text("Kaquiz",style: TextStyle(fontSize: 20) ),
+                const SizedBox(height: 5,),
+                //Username
+                TextFieldWidget(hint: "Username", controller: usernameC),
+                const SizedBox(height: 5,),
+                //Email
+                TextFieldWidget(hint: "Email", controller: emailC),
+                const SizedBox(height: 5),
+                //Password
+                TextFieldWidget(hint: "Password", controller: passwordC,obscure: true),
+                const SizedBox(height: 5,),
+                //Confirm Password
+                TextFieldWidget(hint: "Confirm password", controller: confirmPasswordC,obscure: true),
+                const SizedBox(height: 20,),
+                _profileImageWidget(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Have an account?"),
+                    GestureDetector(
+                      onTap: widget.tap,
+                      child: const Text(" Login here",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  ],
+                ),
+              ],
+            )
+          )
+        )
+      )
     );
 
   }
+
 }
