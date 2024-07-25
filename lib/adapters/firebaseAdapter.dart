@@ -260,9 +260,13 @@ class FirebaseAdapter {
     );
   }
 
-  Future<Users> findUsers(String user) async{
-    QuerySnapshot querySnapshotEm = await _users.where('email', isEqualTo: user).get();
-    QuerySnapshot querySnapshotUn = await _users.where('username', isEqualTo: user).get();
+  Future<Users> findUsers(String userId,String find) async{
+    QuerySnapshot querySnapshotEm = await _users
+        .where('email', isEqualTo: find)
+        .get();
+    QuerySnapshot querySnapshotUn = await _users
+        .where('username', isEqualTo: find)
+        .get();
 
     Users ret = [];
 
@@ -271,9 +275,11 @@ class FirebaseAdapter {
         Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
 
         String id = data["id"];
-        String userName = data["username"];
-        String email = data["email"];
-        String profilePicUrl = data["profileUrl"];
+
+        if(userId != id) {
+          String userName = data["username"];
+          String email = data["email"];
+          String profilePicUrl = data["profileUrl"];
 
           ret.add(UserData.fresh(
             id: id,
@@ -281,13 +287,20 @@ class FirebaseAdapter {
             email: email,
             profilePicUrl: profilePicUrl,
           )
-        );
+          );
+        }
+
 
       }
       for(var doc in querySnapshotUn.docs) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
         String id = data["id"];
+
+        if(id ==userId) {
+          continue;
+        }
+
         String userName = data["username"];
         String email = data["email"];
         String profilePicUrl = data["profileUrl"];

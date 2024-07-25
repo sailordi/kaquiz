@@ -5,6 +5,7 @@ import 'package:tab_container/tab_container.dart';
 import '../../helper/helper.dart';
 import '../../manager/userManager.dart';
 import '../../models/userData.dart';
+import '../../widgets/expandedButtonWidget.dart';
 import '../../widgets/imageWidget.dart';
 import '../../widgets/foundUserWidget.dart';
 import '../../widgets/friendWidget.dart';
@@ -26,10 +27,6 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _findUserC.addListener( () async {
-        await ref.read(userManager.notifier).findUser(_findUserC.text);
-      }
-    );
   }
 
   @override
@@ -119,21 +116,54 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
                 );
               }
           ),
-        )
+        ),
       ],
     );
   }
 
   dynamic _findUsers(BuildContext context,Users users) {
     return Column(
-        children: [
-          Row(
-            children: [
-              const Text("Search for user: "),
-              (context.mounted == false) ? const SizedBox() :
-                TextFieldWidget(hint: "Username/email",controller: _findUserC),
-            ],
-          )
+      children: [
+            const Text("Search for user: "),
+            const SizedBox(height: 5,),
+            (context.mounted == false) ? const SizedBox() :
+            TextFieldWidget(
+                hint: "Username/email",
+                controller: _findUserC,
+            ),
+            const SizedBox(height: 5,),
+            SizedBox(
+              height: 67,
+              child: ExpandedButtonWidget(
+                text: "Find user",
+                fontSize: 15,
+                tap: () async { await ref.read(userManager.notifier).findUser(_findUserC.text); },
+                color: Theme.of(context).colorScheme.inversePrimary,
+                textColor: Theme.of(context).colorScheme.primary,
+              )
+            ),
+            const SizedBox(height: 5,),
+            Flexible(
+              child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: users.length,
+                  itemBuilder: (context,index) {
+                    return Column(
+                      children: [
+                       FoundUserWidget(
+                         user: users[index],
+                         sendInvite: () async {
+                           await ref.read(userManager.notifier).sendRequest(index);
+                         },
+                        ),
+                        (users.length-1 == index) ? const SizedBox() :
+                        const SizedBox(height: 20,)
+                      ],
+                    );
+                  }
+              ),
+            ),
+            const SizedBox(height: 5,),
         ],
     );
 
@@ -203,39 +233,41 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text("Kaquiz: profile"),
+        title: const Text("Kaquiz: profile"),
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 5,),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      body: SingleChildScrollView(
+          child:  Column(
             children: [
-              const SizedBox(width: 5,),
-              ImageWidget(url: udM.profilePicUrl, height: 50),
-              const SizedBox(width: 5,),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
+              const SizedBox(height: 5,),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Text("Username: ${udM.userName}"),
-                  const SizedBox(width: 40,),
-                  Text("Email: ${udM.email}"),
-                  const SizedBox(width: 40,),
-                  Text("Friends: ${friendsM.length}"),
-                  const SizedBox(width: 40,),
-                  Text("Received requests: ${receivedReqM.length}"),
-                  const SizedBox(width: 40,),
-                  Text("Sent requests: ${sentReqM.length}"),
+                  const SizedBox(width: 5,),
+                  ImageWidget(url: udM.profilePicUrl, height: 50),
+                  const SizedBox(width: 5,),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text("Username: ${udM.userName}"),
+                      const SizedBox(width: 40,),
+                      Text("Email: ${udM.email}"),
+                      const SizedBox(width: 40,),
+                      Text("Friends: ${friendsM.length}"),
+                      const SizedBox(width: 40,),
+                      Text("Received requests: ${receivedReqM.length}"),
+                      const SizedBox(width: 40,),
+                      Text("Sent requests: ${sentReqM.length}"),
+                    ],
+                  ),
+                  const SizedBox(width: 5,),
                 ],
               ),
-              const SizedBox(width: 5,),
+              const SizedBox(height: 5,),
+              _tabContainer(context,friendsM,sentReqM,receivedReqM,foundUsers)
             ],
-          ),
-          const SizedBox(height: 5,),
-          _tabContainer(context,friendsM,sentReqM,receivedReqM,foundUsers)
-        ],
-      ),
+          )
+      )
     );
 
   }

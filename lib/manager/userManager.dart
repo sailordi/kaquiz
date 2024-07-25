@@ -39,6 +39,7 @@ class UserManager extends StateNotifier<UserModel> {
     });
 
     _sentRequestsStream = firebaseA.sentRequestsStream(userId,(String userId) async {
+      print("Sent stream user id: $userId");
       var req = await firebaseA.getRequests(userId,true);
 
       state = state.copyWith(sentRequests: req);
@@ -125,12 +126,12 @@ class UserManager extends StateNotifier<UserModel> {
     state = state.copyWith(receivedRequests: userL.last,sentRequests: userL.first);
   }
 
-  Future<void> findUser(String user) async {
-    if(user.isEmpty) {
+  Future<void> findUser(String find) async {
+    if(find.isEmpty) {
       state = state.copyWith(foundUsers: []);
     }
 
-    var users =  await firebaseA.findUsers(user);
+    var users =  await firebaseA.findUsers(state.data.id,find);
 
     state = state.copyWith(foundUsers: users);
   }
