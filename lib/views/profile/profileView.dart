@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kaquiz/widgets/textFieldWidget.dart';
 import 'package:tab_container/tab_container.dart';
 
 import '../../helper/helper.dart';
@@ -10,6 +9,7 @@ import '../../widgets/imageWidget.dart';
 import '../../widgets/foundUserWidget.dart';
 import '../../widgets/friendWidget.dart';
 import '../../widgets/requestWidget.dart';
+import '../../widgets/textFieldWidget.dart';
 
 class ProfileView extends ConsumerStatefulWidget {
   const ProfileView({super.key});
@@ -20,12 +20,16 @@ class ProfileView extends ConsumerStatefulWidget {
 
 class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final TextEditingController findUserC = TextEditingController();
+  final TextEditingController _findUserC = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _findUserC.addListener( () async {
+        await ref.read(userManager.notifier).findUser(_findUserC.text);
+      }
+    );
   }
 
   @override
@@ -34,7 +38,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
     super.dispose();
   }
 
-  dynamic userFriends(BuildContext context,Users users) {
+  dynamic _userFriends(BuildContext context,Users users) {
     return Column(
       children: [
         Flexible(
@@ -68,7 +72,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
 
   }
 
-  dynamic sentRequests(Users users) {
+  dynamic _sentRequests(Users users) {
     return Column(
       children: [
         Flexible(
@@ -91,7 +95,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
 
   }
 
-  dynamic receivedRequest(Users users)  {
+  dynamic _receivedRequest(Users users)  {
     return Column(
       children: [
         Flexible(
@@ -120,22 +124,23 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
     );
   }
 
-  dynamic findUsers(BuildContext context,Users users) {
+  dynamic _findUsers(BuildContext context,Users users) {
     return Column(
-      children: [
-        Row(
-          children: [
-            const Text("Search for user: "),
-            TextFieldWidget(hint: "Username/email", controller: findUserC)
-          ],
-        ),
-      ],
+        children: [
+          Row(
+            children: [
+              const Text("Search for user: "),
+              (context.mounted == false) ? const SizedBox() :
+                TextFieldWidget(hint: "Username/email",controller: _findUserC),
+            ],
+          )
+        ],
     );
 
   }
 
-  dynamic tabContainer(BuildContext context,Users friends,Users sent,Users receive,Users foundUsers) {
-    const heightRem = 239;
+  dynamic _tabContainer(BuildContext context,Users friends,Users sent,Users receive,Users foundUsers) {
+    const heightRem = 300;
 
     return TabContainer(
       controller: _tabController,
@@ -164,24 +169,24 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
         Text('Friends'),
         Text('Received requests'),
         Text('Sent requests'),
-        Text('Find user'),
+        Text('Find users'),
       ],
       children: [
         SizedBox(
             height: MediaQuery.of(context).size.height-heightRem,
-            child: userFriends(context,friends)
+            child: _userFriends(context,friends)
         ),
         SizedBox(
             height: MediaQuery.of(context).size.height-heightRem,
-            child: receivedRequest(receive)
+            child: _receivedRequest(receive)
         ),
         SizedBox(
             height: MediaQuery.of(context).size.height-heightRem,
-            child:  sentRequests(sent)
+            child:  _sentRequests(sent)
         ),
         SizedBox(
             height: MediaQuery.of(context).size.height-heightRem,
-            child: findUsers(context,foundUsers)
+            child:  _findUsers(context,foundUsers)
         ),
       ],
     );
@@ -198,22 +203,29 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text("Kaquiz: ${udM.userName}(${udM.email})'s profile"),
+        title: Text("Kaquiz: profile"),
       ),
       body: Column(
         children: [
           const SizedBox(height: 5,),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               const SizedBox(width: 5,),
               ImageWidget(url: udM.profilePicUrl, height: 50),
               const SizedBox(width: 5,),
               Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  Text("Username: ${udM.userName}"),
+                  const SizedBox(width: 40,),
+                  Text("Email: ${udM.email}"),
+                  const SizedBox(width: 40,),
                   Text("Friends: ${friendsM.length}"),
-                  const SizedBox(width: 5,),
+                  const SizedBox(width: 40,),
                   Text("Received requests: ${receivedReqM.length}"),
-                  const SizedBox(width: 5,),
+                  const SizedBox(width: 40,),
                   Text("Sent requests: ${sentReqM.length}"),
                 ],
               ),
@@ -221,7 +233,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
             ],
           ),
           const SizedBox(height: 5,),
-          tabContainer(context,friendsM,sentReqM,receivedReqM,foundUsers)
+          _tabContainer(context,friendsM,sentReqM,receivedReqM,foundUsers)
         ],
       ),
     );

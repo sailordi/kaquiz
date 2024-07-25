@@ -126,9 +126,13 @@ class UserManager extends StateNotifier<UserModel> {
   }
 
   Future<void> findUser(String user) async {
+    if(user.isEmpty) {
+      state = state.copyWith(foundUsers: []);
+    }
+
     var users =  await firebaseA.findUsers(user);
 
-      state = state.copyWith(foundUsers: users);
+    state = state.copyWith(foundUsers: users);
   }
 
   Future<void> sendRequest(int index) async {

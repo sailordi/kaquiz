@@ -32,7 +32,7 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
     super.dispose();
   }
 
-  Marker createMarker(UserData d) {
+  Marker _createMarker(UserData d) {
     return Marker(
           markerId: MarkerId("${d.userName}(${d.email})"),
           onTap: () { Helper.messageToUser("Location lat/long:\n${d.pos().latitude}/${d.pos().longitude}",context); },
@@ -42,10 +42,10 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
 
   }
 
-  dynamic friendMap(UserData user,Users friends) {
-    Set<Marker> markers = friends.map( (f) => createMarker(f) ).toSet();
+  dynamic _friendMap(UserData user,Users friends) {
+    Set<Marker> markers = friends.map( (f) => _createMarker(f) ).toSet();
 
-    markers.add(createMarker(user) );
+    markers.add(_createMarker(user) );
 
     return Flexible(
         child: GoogleMap(
@@ -60,7 +60,7 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
 
   }
 
-  dynamic friendList(Users friends) {
+  dynamic _friendList(Users friends) {
     return Flexible(
       child: ListView.builder(
           shrinkWrap: true,
@@ -79,7 +79,7 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
 
   }
 
-  dynamic yourData(UserData data) {
+  dynamic _yourData(UserData data) {
 
     return Column(
       children: [
@@ -113,15 +113,15 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
 
   }
 
-  dynamic tabContainer(BuildContext context,UserData user,Users friends) {
-    const heightRem = 300;
+  dynamic _tabContainer(BuildContext context,UserData user,Users friends) {
+    const heightRem = 302;
 
     return TabContainer(
       controller: _tabController,
       tabEdge: TabEdge.top,
       tabsStart: 0.1,
       tabsEnd: 0.9,
-      tabMaxLength: 100,
+      tabMaxLength: 120,
       borderRadius: BorderRadius.circular(2),
       tabBorderRadius: BorderRadius.circular(2),
       childPadding: const EdgeInsets.all(10.0),
@@ -144,14 +144,15 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
       children: [
         SizedBox(
             height: MediaQuery.of(context).size.height-heightRem,
-            child: friendList(friends)
+            child: _friendList(friends)
         ),
         SizedBox(
             height: MediaQuery.of(context).size.height-heightRem,
-            child: friendMap(user,friends)
+            child: _friendMap(user,friends)
         ),
       ],
     );
+
   }
 
   @override
@@ -167,9 +168,9 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
           drawer: const DrawerWidget(),
           body:Column(
             children: [
-             yourData(userData),
+             _yourData(userData),
               const SizedBox(height: 10,),
-              tabContainer(context,userData,friendsData)
+              _tabContainer(context,userData,friendsData)
             ],
           )
       );

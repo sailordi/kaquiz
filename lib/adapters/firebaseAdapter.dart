@@ -74,7 +74,7 @@ class FirebaseAdapter {
 
     final List<DocumentSnapshot> documents = result.docs;
 
-    if(documents.isNotEmpty) {
+    if(documents.isEmpty) {
       throw "Error: Email is not registered can not log in";
     }
 
