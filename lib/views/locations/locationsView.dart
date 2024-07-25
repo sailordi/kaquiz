@@ -35,7 +35,7 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
   Marker createMarker(UserData d) {
     return Marker(
           markerId: MarkerId("${d.userName}(${d.email})"),
-          onTap: () { Helper.messageToUser("Location lat/long: ${d.pos().latitude}/${d.pos().longitude}",context); },
+          onTap: () { Helper.messageToUser("Location lat/long:\n${d.pos().latitude}/${d.pos().longitude}",context); },
           icon: BitmapDescriptor.defaultMarker,
           position: d.pos(),
     );
@@ -114,15 +114,17 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
   }
 
   dynamic tabContainer(BuildContext context,UserData user,Users friends) {
+    const heightRem = 300;
+
     return TabContainer(
       controller: _tabController,
       tabEdge: TabEdge.top,
       tabsStart: 0.1,
       tabsEnd: 0.9,
       tabMaxLength: 100,
-      borderRadius: BorderRadius.circular(10),
-      tabBorderRadius: BorderRadius.circular(10),
-      childPadding: const EdgeInsets.all(20.0),
+      borderRadius: BorderRadius.circular(2),
+      tabBorderRadius: BorderRadius.circular(2),
+      childPadding: const EdgeInsets.all(10.0),
       selectedTextStyle: const TextStyle(
         color: Colors.blue,
         fontSize: 15.0,
@@ -141,11 +143,11 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
       ],
       children: [
         SizedBox(
-            height: MediaQuery.of(context).size.height-350,
+            height: MediaQuery.of(context).size.height-heightRem,
             child: friendList(friends)
         ),
         SizedBox(
-            height: MediaQuery.of(context).size.height-350,
+            height: MediaQuery.of(context).size.height-heightRem,
             child: friendMap(user,friends)
         ),
       ],

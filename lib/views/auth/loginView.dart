@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../helper/helper.dart';
 import '../../manager/userManager.dart';
+import '../../models/myError.dart';
 import '../../widgets/expandedButtonWidget.dart';
 import '../../widgets/textFieldWidget.dart';
 
@@ -53,10 +54,10 @@ class _LoginViewState extends ConsumerState<LoginView> {
       if(mounted) {
         Navigator.pop(context);
       }
-    } on Exception catch(e) {
+    } on MyError catch(e) {
       if(mounted) {
         Navigator.pop(context);
-        Helper.messageToUser(e.toString(),context);
+        Helper.messageToUser(e.text,context);
       }
     }
 

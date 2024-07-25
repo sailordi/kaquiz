@@ -9,6 +9,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../models/userData.dart';
 import '../../models/userModel.dart';
+import '../models/myError.dart';
 
 class FirebaseAdapter {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -52,7 +53,7 @@ class FirebaseAdapter {
         imageUrl = await taskSnapshot.ref.getDownloadURL();
       }
 
-      _users.doc(id).set({
+      await _users.doc(id).set({
         "id":id,
         "email":email,
         "username":username,
@@ -60,7 +61,7 @@ class FirebaseAdapter {
       });
 
     } on FirebaseAuthException catch(e) {
-      throw Exception(e.toString() );
+      throw MyError(e.code);
     }
 
   }
@@ -83,7 +84,7 @@ class FirebaseAdapter {
 
       return id;
     } on FirebaseAuthException catch (e) {
-      throw Exception(e.toString() );
+      throw MyError(e.code);
     }
 
   }

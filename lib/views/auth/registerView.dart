@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../adapters/imageAdapter.dart';
 import '../../helper/helper.dart';
 import '../../manager/userManager.dart';
+import '../../models/myError.dart';
 import '../../widgets/actionButton.dart';
 import '../../widgets/buttonWidget.dart';
 import '../../widgets/expandedButtonWidget.dart';
@@ -76,10 +77,10 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
         Navigator.pop(context);
       }
 
-    } on Exception catch(e) {
+    } on MyError catch(e) {
       if(mounted) {
         Navigator.pop(context);
-        Helper.messageToUser(e.toString(), context);
+        Helper.messageToUser(e.text, context);
       }
 
     }

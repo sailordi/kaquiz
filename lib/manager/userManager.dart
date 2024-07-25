@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import '../adapters/firebaseAdapter.dart';
 import '../adapters/locationAdapter.dart';
 import '../adapters/timerAdapter.dart';
+import '../models/myError.dart';
 import '../models/userData.dart';
 import '../models/userModel.dart';
 
@@ -25,10 +26,10 @@ class UserManager extends StateNotifier<UserModel> {
 
     try {
       userId = await firebaseA.logIn(email,password);
-    } on Exception catch (e) {
-      throw Exception("Error: Could not login\n${e.toString()}");
+    } on MyError catch (e) {
+      throw MyError("Error: Could not login\n${e.text}");
     } on String catch(e) {
-      throw Exception(e);
+      throw MyError(e);
     }
 
     _friendStream = firebaseA.friendStream(userId,(String userId) async {
@@ -55,10 +56,10 @@ class UserManager extends StateNotifier<UserModel> {
   Future<void> register(String email,String password,String username,File? image) async {
     try {
       await firebaseA.register(email,password,username,image);
-    } on Exception catch (e) {
-      throw Exception("Error: Could not register\n${e.toString()}");
+    } on MyError catch (e) {
+      throw MyError("Error: Could not register\n${e.text}");
     } on String catch(e) {
-      throw Exception(e);
+      throw MyError(e);
     }
 
     await logIn(email,password);
