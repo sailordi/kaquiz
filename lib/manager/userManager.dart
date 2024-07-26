@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -15,7 +15,7 @@ class UserManager extends StateNotifier<UserModel> {
   final StateNotifierProviderRef ref;
   late FirebaseAdapter firebaseA = FirebaseAdapter();
   late TimerAdapter timerA;
-  StreamSubscription<QuerySnapshot<Object?> >? _friendStream,_receivedRequestsStream,_sentRequestsStream;
+  StreamSubscription<DatabaseEvent>? _friendStream,_receivedRequestsStream,_sentRequestsStream;
 
   UserManager(this.ref) : super(UserModel.empty() ){
     timerA = TimerAdapter(minutes: 10,onTiger: _timerFunctions);

@@ -124,7 +124,9 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
   dynamic _findUsers(BuildContext context,Users users) {
     return Column(
       children: [
-            const Text("Search for user: "),
+            const Text("Search for user: ",
+              style: TextStyle(fontSize: 18),
+            ),
             const SizedBox(height: 5,),
             (context.mounted == false) ? const SizedBox() :
             TextFieldWidget(

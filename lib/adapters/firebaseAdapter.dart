@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:geolocator/geolocator.dart';
 
 import '../../models/userData.dart';
 import '../../models/userModel.dart';
@@ -14,25 +12,34 @@ import '../models/myError.dart';
 class FirebaseAdapter {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
-  final CollectionReference _users = FirebaseFirestore.instance.collection("users");
-  final CollectionReference _requests = FirebaseFirestore.instance.collection("requests");
-  final CollectionReference _locations = FirebaseFirestore.instance.collection("locations");
+  final DatabaseReference database = FirebaseDatabase.instance.ref();
+
+  DatabaseReference userTableRef() {
+    return database.child("users");
+  }
+
+  DatabaseReference userRef(String userId) {
+    return database.child("users/$userId");
+  }
+
+  DatabaseReference requestTableRef() {
+    return database.child("requests");
+  }
+
+  DatabaseReference locationTableRef() {
+    return database.child("locations");
+  }
+
+  DatabaseReference friendTableRef(String userId) {
+    return database.child("users/$userId/friends");
+  }
 
   FirebaseAdapter();
 
-  CollectionReference _fiendRef(String userId) {
-    return _users.doc(userId).collection("friends");
-  }
-
   Future<void> register(String email,String password,String username,File? image) async {
-    QuerySnapshot result = await _users
-        .where("email", isEqualTo: email)
-        .limit(1)  // We only need to check if at least one document exists
-        .get();
+    final userSnapshot = await userTableRef().orderByChild("email").equalTo(email).get();
 
-    final List<DocumentSnapshot> documents = result.docs;
-
-    if(documents.isNotEmpty) {
+    if (userSnapshot.exists) {
       throw "Error: Email already registered";
     }
 
@@ -53,7 +60,7 @@ class FirebaseAdapter {
         imageUrl = await taskSnapshot.ref.getDownloadURL();
       }
 
-      await _users.doc(id).set({
+      await userRef(id).set({
         "id":id,
         "email":email,
         "username":username,
@@ -67,14 +74,10 @@ class FirebaseAdapter {
   }
 
   Future<String> logIn(String email,String password) async {
-    QuerySnapshot result = await _users
-        .where("email", isEqualTo: email)
-        .limit(1)  // We only need to check if at least one document exists
-        .get();
+    var doc = await userTableRef().orderByChild("email").equalTo(email).get();
 
-    final List<DocumentSnapshot> documents = result.docs;
-
-    if(documents.isEmpty) {
+    if(doc.value == null) {
+      print("login ($email): exists:${doc.exists}, value:${doc.value}");
       throw "Error: Email is not registered can not log in";
     }
 
@@ -115,12 +118,17 @@ class FirebaseAdapter {
 
   Future<Users> getFriends(String userId) async {
     Users ret = [];
-    var friendsId = await _fiendRef(userId).get();
+    var friendsSnapshot = await friendTableRef(userId).get();
 
-      for(var friendDoc in friendsId.docs) {
-        var data = friendDoc.data() as Map<String, dynamic>;
+      for(var doc in friendsSnapshot.children) {
+        if(doc.value == null) {
+          print("Error: could not get doc value remove requests with userid\n$userId");
+          continue;
+        }
+
+        var data =  Map<String, dynamic>.from(doc.value as dynamic);
         String friendId = data["id"];
-        UserData f = await getUser(friendId,withLocation: true);
+        UserData f = await getUser(friendId, withLocation: true);
 
         ret.add(f);
       }
@@ -129,9 +137,9 @@ class FirebaseAdapter {
   }
 
   Future<void> updateLocation(String userId,String latitude,String longitude) async {
-    await _locations.doc(userId).set({
-      "latitude":latitude,
-      "longitude":longitude,
+    await locationTableRef().child(userId).set({
+      "latitude": latitude,
+      "longitude": longitude,
     });
 
   }
@@ -141,142 +149,150 @@ class FirebaseAdapter {
   }
 
   Future<void>  addFriend(String userId,String friendId) async {
-    var userF = _fiendRef(userId);
-    var friendF = _fiendRef(friendId);
-    var friend = await userF.doc(friendId).get();
+    var userF = friendTableRef(userId);
+    var friendF = friendTableRef(friendId);
+    var friendSnapshot = await userF.child(friendId).get();
 
-    if(!friend.exists) {
+    if (friendSnapshot.exists) {
       var user = await getUser(friendId);
       throw "Error: ${user.userName}(${user.email}) has already been added as a friend";
     }
 
     await Future.wait([
-      userF.doc(friendId).set({"id":friendId}),
-      friendF.doc(userId).set({"id":userId}),
+      userF.child(friendId).set({"id": friendId}),
+      friendF.child(userId).set({"id": userId}),
     ]);
 
   }
 
   Future<void> removeFriend(String userId,String friendId) async {
-    var userF = _fiendRef(userId);
-    var friendF = _fiendRef(friendId);
+    var userF = friendTableRef(userId);
+    var friendF = friendTableRef(friendId);
 
-    var friend = await userF.doc(friendId).get();
+    var friendSnapshot = await userF.child(friendId).get();
 
-    if(!friend.exists) {
+    if (!friendSnapshot.exists) {
       var user = await getUser(friendId);
       throw "Error: ${user.userName}(${user.email}) has already been removed";
     }
 
     await Future.wait([
-      userF.doc(friendId).delete(),
-      friendF.doc(userId).delete(),
+      userF.child(friendId).remove(),
+      friendF.child(userId).remove(),
     ]);
 
   }
 
-  StreamSubscription<QuerySnapshot<Object?> > friendStream(String userId,void Function(String) friendsChange) {
-    return _fiendRef(userId).snapshots(includeMetadataChanges: false).listen(
-            (event) { friendsChange(userId); },
-            onError: (error) { print("Friend stream failed:\n$error"); }
+  StreamSubscription<DatabaseEvent> friendStream(String userId,void Function(String) friendsChange) {
+    return friendTableRef(userId).onValue.listen( (event) {
+        friendsChange(userId);
+      },
+      onError: (error) {
+        print("Friend stream failed:\n$error");
+      },
     );
 
   }
 
   Future<void> sendRequest(String userId,String toId) async {
-    var requestQ = await _requests.where('sender', isEqualTo: userId)
-                          .where('receiver', isEqualTo: toId)
-                          .get();
-    var friendQ = await _fiendRef(userId).where('id', isEqualTo: toId)
-                          .get();
+    var requestSnapshot = await requestTableRef().orderByChild('sender').equalTo(userId).get();
+    var friendSnapshot = await friendTableRef(userId).orderByChild('id').equalTo(toId).get();
 
-    if(requestQ.docs.isNotEmpty) {
+    if (requestSnapshot.exists) {
       var user = await getUser(toId);
       throw "Error: You have already sent request to ${user.userName}(${user.email})";
     }
 
-    if(friendQ.docs.isNotEmpty) {
+    if (friendSnapshot.exists) {
       var user = await getUser(toId);
       throw "Error: This user ${user.userName}(${user.email}) is already your friend";
     }
 
-    await _requests.doc().set({"sender":userId,"receiver":toId});
+    await requestTableRef().push().set({"sender": userId, "receiver": toId});
   }
 
   Future<void> declineRequests(String userId,String friendId) async {
-    var requestQ = await _requests.where('sender', isEqualTo: userId)
-                          .where('receiver', isEqualTo: friendId)
-                          .get();
+    var requestSnapshot = await requestTableRef().orderByChild('sender').equalTo(userId).get();
 
-    for(var d in requestQ.docs) {
-      await d.reference.delete();
-    }
+      for (var doc in requestSnapshot.children) {
+        if(!doc.exists) {
+          print("Error: could not get doc remove requests with userid\n$userId");
+          continue;
+        }
+
+        await doc.ref.remove();
+      }
 
   }
 
   Future<Users> getRequests(String id,bool sent) async        {
     Users ret = [];
+    Query query;
 
-    QuerySnapshot q;
+    if (sent) {
+      query = requestTableRef().orderByChild('sender').equalTo(id);
+    } else {
+      query = requestTableRef().orderByChild('receiver').equalTo(id);
+    }
 
-      if(sent) {
-        q = await _requests.where('sender', isEqualTo: id).get();
+    var requestSnapshot = await query.get();
+
+    for (var doc in requestSnapshot.children) {
+      if(doc.value == null) {
+        print("Error: could not get doc value requests with userid\n$id");
+        continue;
+      }
+
+      Map<String, dynamic> data =  Map<String, dynamic>.from(doc.value as dynamic);
+
+      String senderId = data["sender"];
+      String receiverId = data["receiver"];
+
+      if (sent) {
+        ret.add(await getUser(receiverId));
       } else {
-        q = await _requests.where('receiver', isEqualTo: id).get();
+        ret.add(await getUser(senderId));
       }
 
-      for(var doc in q.docs) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    }
 
-        String senderId = data["sender"];
-        String receiverId = data["receiver"];
-
-        if(sent) {
-          ret.add(await getUser(receiverId) );
-        }else {
-          ret.add(await getUser(senderId) );
-        }
-
-      }
-
-      return ret;
+    return ret;
   }
 
-  StreamSubscription<QuerySnapshot<Object?> > receivedRequestsStream(String userId,void Function(String) receivedChange) {
-    return _requests.where('receiver',isEqualTo: userId)
-        .snapshots(includeMetadataChanges: false)
-        .listen(
-            (event) { receivedChange(userId); },
-            onError: (error) { print("Friend stream failed:\n$error"); }
-        );
+  StreamSubscription<DatabaseEvent> receivedRequestsStream(String userId,void Function(String) receivedChange) {
+      return requestTableRef().orderByChild('receiver').equalTo(userId).onValue.listen( (event) {
+          receivedChange(userId);
+        },
+        onError: (error) {
+          print("Received requests stream failed:\n$error");
+        },
+      );
   }
 
-  StreamSubscription<QuerySnapshot<Object?> > sentRequestsStream(String userId,void Function(String) sentChange) {
-    return _requests.where('sent',isEqualTo: userId)
-        .snapshots(includeMetadataChanges: false)
-        .listen(
-            (event) { sentChange(userId); },
-        onError: (error) { print("Friend stream failed:\n$error"); }
-    );
+  StreamSubscription<DatabaseEvent> sentRequestsStream(String userId,void Function(String) sentChange) {
+      return requestTableRef().orderByChild('sender').equalTo(userId).onValue.listen( (event) {
+          sentChange(userId);
+        },
+        onError: (error) {
+          print("Sent requests stream failed:\n$error");
+        },
+      );
   }
 
   Future<Users> findUsers(String userId,String find) async{
-    QuerySnapshot querySnapshotEm = await _users
-        .where('email', isEqualTo: find)
-        .get();
-    QuerySnapshot querySnapshotUn = await _users
-        .where('username', isEqualTo: find)
-        .get();
+    var emailQuerySnapshot = await userTableRef().orderByChild('email').equalTo(find).get();
+    var usernameQuerySnapshot = await userTableRef().orderByChild('username').equalTo(find).get();
 
     Users ret = [];
 
-      if(querySnapshotEm.docs.isNotEmpty) {
-        DocumentSnapshot documentSnapshot = querySnapshotEm.docs.first;
-        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
-
+    if (emailQuerySnapshot.exists) {
+      if(emailQuerySnapshot.value == null) {
+        print("Error: could not get value find user email userid/email\n$userId/$find");
+      }else {
+        var data =  Map<String, dynamic>.from(emailQuerySnapshot.value as dynamic);
         String id = data["id"];
 
-        if(userId != id) {
+        if (userId != id) {
           String userName = data["username"];
           String email = data["email"];
           String profilePicUrl = data["profileUrl"];
@@ -286,41 +302,55 @@ class FirebaseAdapter {
             userName: userName,
             email: email,
             profilePicUrl: profilePicUrl,
-          )
-          );
+          ));
         }
 
-
-      }
-      for(var doc in querySnapshotUn.docs) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-
-        String id = data["id"];
-
-        if(id ==userId) {
-          continue;
-        }
-
-        String userName = data["username"];
-        String email = data["email"];
-        String profilePicUrl = data["profileUrl"];
-
-        ret.add(
-          UserData.fresh(
-            id: id,
-            userName: userName,
-            email: email,
-            profilePicUrl: profilePicUrl,
-          )
-        );
       }
 
-      return ret;
+    }
+
+    for (var doc in usernameQuerySnapshot.children) {
+      if(doc.value == null) {
+        print("Error: could not get doc value find user with userid/username\n$userId/$find");
+        continue;
+      }
+
+      Map<String, dynamic> data =  Map<String, dynamic>.from(doc.value as dynamic);
+      String id = data["id"];
+
+      if (id == userId) {
+        continue;
+      }
+
+      String userName = data["username"];
+      String email = data["email"];
+      String profilePicUrl = data["profileUrl"];
+
+      ret.add(UserData.fresh(
+        id: id,
+        userName: userName,
+        email: email,
+        profilePicUrl: profilePicUrl,
+      ));
+    }
+
+    return ret;
   }
 
   Future<UserData> getUser(String userId,{bool withLocation = false}) async {
-    var doc = await _users.doc(userId).get();
-    var data = doc.data() as Map<String, dynamic>;
+    var userSnapshot = await userRef(userId).get();
+
+    if(!userSnapshot.exists) {
+      print("Error: could not find user with id\n$userId");
+      return UserData.empty();
+    }
+
+    if(userSnapshot.value == null) {
+      print("Error: could not find user with id doc value null\n$userId");
+      return UserData.empty();
+    }
+
+    var data = Map<String, dynamic>.from(userSnapshot.value as dynamic);
 
     String id = data["id"];
     String userName = data["username"];
@@ -328,21 +358,26 @@ class FirebaseAdapter {
     String profilePicUrl = data["profileUrl"];
 
     var ret = UserData.fresh(
-        id: id,
-        userName: userName,
-        email: email,
-        profilePicUrl: profilePicUrl,
+      id: id,
+      userName: userName,
+      email: email,
+      profilePicUrl: profilePicUrl,
     );
 
-    if(withLocation) {
-      var docL = await _locations.doc(id).get();
-      var lD = docL.data() as Map<String, dynamic>;
+    if (withLocation) {
+      var locationSnapshot = await locationTableRef().child(id).get();
 
-      ret = ret.copyWith(longitude: lD["longitude"],latitude: lD["latitude"]);
+      if(locationSnapshot.value == null) {
+        print("Error: could not find user location with id doc value null\n$userId");
+      }else {
+        var lD =  Map<String, dynamic>.from(locationSnapshot.value as dynamic);
+
+        ret = ret.copyWith(longitude: lD["longitude"], latitude: lD["latitude"]);
+      }
+
     }
 
     return ret;
-
   }
 
 }
