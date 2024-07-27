@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tab_container/tab_container.dart';
@@ -35,6 +37,72 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
     super.dispose();
   }
 
+  Future<void> _sendInvite(int index,BuildContext context) async {
+    UserData? friend;
+    try {
+      friend = await ref.read(userManager.notifier).sendRequest(index);
+    } on String catch (e) {
+      if(context.mounted) {
+        Helper.messageToUser(e, context);
+      }
+      return;
+    }
+
+    if(context.mounted) {
+      Helper.messageToUser("Sent friend request to:\n${friend.userName} (${friend.email})", context);
+    }
+
+  }
+
+  Future<void> _acceptInvite(int index,BuildContext context) async {
+    UserData? user;
+    try {
+      user = await ref.read(userManager.notifier).acceptRequest(index);
+    } on String catch (e) {
+      if(context.mounted) {
+        Helper.messageToUser(e, context);
+      }
+      return;
+    }
+
+    if(context.mounted) {
+      Helper.messageToUser("Accepted friend request from:\n${user.userName} (${user.email})", context);
+    }
+  }
+
+  Future<void> _declineInvite(int index,BuildContext context) async {
+    UserData? user;
+    try {
+      user = await ref.read(userManager.notifier).declineRequest(index);
+    } on String catch (e) {
+      if(context.mounted) {
+        Helper.messageToUser(e, context);
+      }
+      return;
+    }
+
+    if(context.mounted) {
+      Helper.messageToUser("Declined friend request from:\n${user.userName} (${user.email})", context);
+    }
+
+  }
+
+  Future<void> _removeFriend(int index,BuildContext context) async {
+    UserData? user;
+    try {
+      user = await ref.read(userManager.notifier).removeFriend(index);
+    } on String catch (e) {
+      if(context.mounted) {
+        Helper.messageToUser(e, context);
+      }
+      return;
+    }
+
+    if(context.mounted) {
+      Helper.messageToUser("Removed friend:\n${user.userName} (${user.email})", context);
+    }
+  }
+
   dynamic _userFriends(BuildContext context,Users users) {
     return Column(
       children: [
@@ -46,16 +114,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
                 return Column(
                   children: [
                     FriendWidget(user: users[index],
-                        remove: () async {
-                          try {
-                            await ref.read(userManager.notifier).removeFriend(index);
-                          } on String catch(e) {
-                            if(context.mounted) {
-                              Helper.messageToUser(e,context);
-                            }
-
-                          }
-                        }
+                        remove: () async { await _removeFriend(index, context); }
                     ),
                     (users.length-1 == index) ? const SizedBox() :
                     const SizedBox(height: 20,)
@@ -103,12 +162,8 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
                 return Column(
                   children: [
                     RequestWidget(received: true,user: users[index],
-                      accept: () async {
-                        await ref.read(userManager.notifier).acceptRequest(index);
-                      },
-                      decline: () async {
-                        await ref.read(userManager.notifier).declineRequest(index);
-                      }
+                      accept: () async { await _acceptInvite(index,context); },
+                      decline: () async { await _declineInvite(index,context); }
                     ),
                     (users.length-1 == index) ? const SizedBox() :
                     const SizedBox(height: 20,)
@@ -144,7 +199,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
                 textColor: Theme.of(context).colorScheme.primary,
               )
             ),
-            const SizedBox(height: 5,),
+            const SizedBox(height: 50,),
             Flexible(
               child: ListView.builder(
                   shrinkWrap: true,
@@ -152,14 +207,11 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
                   itemBuilder: (context,index) {
                     return Column(
                       children: [
-                       FoundUserWidget(
+                        FoundUserWidget(
                          user: users[index],
-                         sendInvite: () async {
-                           await ref.read(userManager.notifier).sendRequest(index);
-                         },
+                         sendInvite: () async { await _sendInvite(index,context); },
                         ),
-                        (users.length-1 == index) ? const SizedBox() :
-                        const SizedBox(height: 20,)
+                        (index != users.length-1) ? const SizedBox(height: 20,) : const SizedBox(),
                       ],
                     );
                   }
@@ -173,6 +225,8 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
 
   dynamic _tabContainer(BuildContext context,Users friends,Users sent,Users receive,Users foundUsers) {
     const heightRem = 300;
+
+    print("(profileView) rec: ${receive.length} sent: ${sent.length}");
 
     return TabContainer(
       controller: _tabController,
@@ -222,6 +276,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
         ),
       ],
     );
+
   }
 
   @override

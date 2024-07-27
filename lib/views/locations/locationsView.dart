@@ -34,8 +34,10 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
 
   Marker _createMarker(UserData d) {
     return Marker(
-          markerId: MarkerId("${d.userName}(${d.email})"),
-          onTap: () { Helper.messageToUser("Location lat/long:\n${d.pos().latitude}/${d.pos().longitude}",context); },
+          markerId: MarkerId(d.email),
+          onTap: () {
+            Helper.messageToUser("Name: ${d.userName}\nEmail: ${d.email}\nLocation lat/long:\n${d.pos().latitude}/${d.pos().longitude}",context);
+            },
           icon: BitmapDescriptor.defaultMarker,
           position: d.pos(),
     );
@@ -79,42 +81,8 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
 
   }
 
-  dynamic _yourData(UserData data) {
-
-    return Column(
-      children: [
-        const SizedBox(height: 5,),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ImageWidget(url: data.profilePicUrl, height: 60)
-          ],
-        ),
-        Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const SizedBox(width: 10,),
-              Text("Name: ${data.userName}"),
-              Text("Email: ${data.email}"),
-              const SizedBox(width: 10,),
-            ]
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const SizedBox(width: 10,),
-            Text("Longitude: ${data.longitude}"),
-            Text("Latitude: ${data.latitude}"),
-            const SizedBox(width: 10,),
-          ],
-        )
-      ],
-    );
-
-  }
-
   dynamic _tabContainer(BuildContext context,UserData user,Users friends) {
-    const heightRem = 302;
+    const heightRem = 350;
 
     return TabContainer(
       controller: _tabController,
@@ -168,8 +136,9 @@ class _LocationsViewState extends ConsumerState<LocationsView> with SingleTicker
           drawer: const DrawerWidget(),
           body:Column(
             children: [
-             _yourData(userData),
-              const SizedBox(height: 10,),
+              const SizedBox(height: 5,),
+              LocationWidget(userData: userData,imageHeight: 60,withBorder: false,),
+              const SizedBox(height: 5,),
               _tabContainer(context,userData,friendsData)
             ],
           )

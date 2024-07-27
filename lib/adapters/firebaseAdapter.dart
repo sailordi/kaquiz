@@ -14,30 +14,34 @@ class FirebaseAdapter {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final DatabaseReference database = FirebaseDatabase.instance.ref();
 
-  DatabaseReference userTableRef() {
+  DatabaseReference _userTableRef() {
     return database.child("users");
   }
 
-  DatabaseReference userRef(String userId) {
+  DatabaseReference _userRef(String userId) {
     return database.child("users/$userId");
   }
 
-  DatabaseReference requestTableRef() {
+  DatabaseReference _requestTableRef() {
     return database.child("requests");
   }
 
-  DatabaseReference locationTableRef() {
+  DatabaseReference _locationTableRef() {
     return database.child("locations");
   }
 
-  DatabaseReference friendTableRef(String userId) {
+  DatabaseReference _friendTableRef(String userId) {
     return database.child("users/$userId/friends");
+  }
+
+  String _createRequestKey(String senderId,String receiverId) {
+        return "$senderId-$receiverId";
   }
 
   FirebaseAdapter();
 
   Future<void> register(String email,String password,String username,File? image) async {
-    final userSnapshot = await userTableRef().orderByChild("email").equalTo(email).get();
+    final userSnapshot = await _userTableRef().orderByChild("email").equalTo(email).get();
 
     if (userSnapshot.exists) {
       throw "Error: Email already registered";
@@ -60,7 +64,7 @@ class FirebaseAdapter {
         imageUrl = await taskSnapshot.ref.getDownloadURL();
       }
 
-      await userRef(id).set({
+      await _userRef(id).set({
         "id":id,
         "email":email,
         "username":username,
@@ -73,8 +77,8 @@ class FirebaseAdapter {
 
   }
 
-  Future<String> logIn(String email,String password) async {
-    var doc = await userTableRef().orderByChild("email").equalTo(email).get();
+  Future<void> logIn(String email,String password) async {
+    var doc = await _userTableRef().orderByChild("email").equalTo(email).get();
 
     if(doc.value == null) {
       print("login ($email): exists:${doc.exists}, value:${doc.value}");
@@ -82,10 +86,7 @@ class FirebaseAdapter {
     }
 
     try {
-      var cred = await _auth.signInWithEmailAndPassword(email: email,password: password);
-      String id = cred.user!.uid;
-
-      return id;
+      await _auth.signInWithEmailAndPassword(email: email,password: password);
     } on FirebaseAuthException catch (e) {
       throw MyError(e.code);
     }
@@ -105,8 +106,8 @@ class FirebaseAdapter {
 
     List<Users> userL = await Future.wait([
       getFriends(userId),
-      getRequests(data.id,true),
-      getRequests(data.id,false),
+      getRequests(data.id,sent: true),
+      getRequests(data.id,sent: false),
     ]);
 
     friends = userL.first;
@@ -118,7 +119,7 @@ class FirebaseAdapter {
 
   Future<Users> getFriends(String userId) async {
     Users ret = [];
-    var friendsSnapshot = await friendTableRef(userId).get();
+    var friendsSnapshot = await _friendTableRef(userId).get();
 
       for(var doc in friendsSnapshot.children) {
         if(doc.value == null) {
@@ -137,7 +138,7 @@ class FirebaseAdapter {
   }
 
   Future<void> updateLocation(String userId,String latitude,String longitude) async {
-    await locationTableRef().child(userId).set({
+    await _locationTableRef().child(userId).set({
       "latitude": latitude,
       "longitude": longitude,
     });
@@ -148,26 +149,9 @@ class FirebaseAdapter {
     await updateLocation(_auth.currentUser!.uid,latitude,longitude);
   }
 
-  Future<void>  addFriend(String userId,String friendId) async {
-    var userF = friendTableRef(userId);
-    var friendF = friendTableRef(friendId);
-    var friendSnapshot = await userF.child(friendId).get();
-
-    if (friendSnapshot.exists) {
-      var user = await getUser(friendId);
-      throw "Error: ${user.userName}(${user.email}) has already been added as a friend";
-    }
-
-    await Future.wait([
-      userF.child(friendId).set({"id": friendId}),
-      friendF.child(userId).set({"id": userId}),
-    ]);
-
-  }
-
   Future<void> removeFriend(String userId,String friendId) async {
-    var userF = friendTableRef(userId);
-    var friendF = friendTableRef(friendId);
+    var userF = _friendTableRef(userId);
+    var friendF = _friendTableRef(friendId);
 
     var friendSnapshot = await userF.child(friendId).get();
 
@@ -184,7 +168,7 @@ class FirebaseAdapter {
   }
 
   StreamSubscription<DatabaseEvent> friendStream(String userId,void Function(String) friendsChange) {
-    return friendTableRef(userId).onValue.listen( (event) {
+    return _friendTableRef(userId).onValue.listen( (event) {
         friendsChange(userId);
       },
       onError: (error) {
@@ -195,12 +179,17 @@ class FirebaseAdapter {
   }
 
   Future<void> sendRequest(String userId,String toId) async {
-    var requestSnapshot = await requestTableRef().orderByChild('sender').equalTo(userId).get();
-    var friendSnapshot = await friendTableRef(userId).orderByChild('id').equalTo(toId).get();
+    var senderSnapshot = await _requestTableRef().child(_createRequestKey(userId,toId) ).get();
+    var receiverSnapshot = await _requestTableRef().child(_createRequestKey(toId,userId) ).get();
+    var friendSnapshot = await _friendTableRef(userId).orderByChild('id').equalTo(toId).get();
 
-    if (requestSnapshot.exists) {
+    if (senderSnapshot.exists) {
       var user = await getUser(toId);
       throw "Error: You have already sent request to ${user.userName}(${user.email})";
+    }
+    if (receiverSnapshot.exists) {
+      var user = await getUser(toId);
+      throw "Error: You have already received request from ${user.userName}(${user.email})";
     }
 
     if (friendSnapshot.exists) {
@@ -208,11 +197,39 @@ class FirebaseAdapter {
       throw "Error: This user ${user.userName}(${user.email}) is already your friend";
     }
 
-    await requestTableRef().push().set({"sender": userId, "receiver": toId});
+    await _requestTableRef().child(_createRequestKey(userId,toId) ).set({"sender": userId, "receiver": toId});
+  }
+
+  Future<void>  acceptRequests(String userId,String friendId) async {
+    var userF = _friendTableRef(userId);
+    var friendF = _friendTableRef(friendId);
+    var friendSnapshot = await userF.child(friendId).get();
+
+    if (friendSnapshot.exists) {
+      var user = await getUser(friendId);
+      throw "Error: ${user.userName}(${user.email}) has already been added as a friend";
+    }
+
+    var requestSnapshot = await _requestTableRef().child(_createRequestKey(friendId,userId) ).get();
+
+    for (var doc in requestSnapshot.children) {
+      if(!doc.exists) {
+        print("Error: could not get doc remove requests with userid\n$userId");
+        continue;
+      }
+
+      await doc.ref.remove();
+    }
+
+    await Future.wait([
+      userF.child(friendId).set({"id": friendId}),
+      friendF.child(userId).set({"id": userId}),
+    ]);
+
   }
 
   Future<void> declineRequests(String userId,String friendId) async {
-    var requestSnapshot = await requestTableRef().orderByChild('sender').equalTo(userId).get();
+    var requestSnapshot = await _requestTableRef().child(_createRequestKey(friendId,userId) ).get();
 
       for (var doc in requestSnapshot.children) {
         if(!doc.exists) {
@@ -225,14 +242,14 @@ class FirebaseAdapter {
 
   }
 
-  Future<Users> getRequests(String id,bool sent) async        {
+  Future<Users> getRequests(String id,{required bool sent}) async        {
     Users ret = [];
     Query query;
 
-    if (sent) {
-      query = requestTableRef().orderByChild('sender').equalTo(id);
+    if(sent) {
+      query = _requestTableRef().orderByChild('sender').equalTo(id);
     } else {
-      query = requestTableRef().orderByChild('receiver').equalTo(id);
+      query = _requestTableRef().orderByChild('receiver').equalTo(id);
     }
 
     var requestSnapshot = await query.get();
@@ -259,29 +276,35 @@ class FirebaseAdapter {
     return ret;
   }
 
-  StreamSubscription<DatabaseEvent> receivedRequestsStream(String userId,void Function(String) receivedChange) {
-      return requestTableRef().orderByChild('receiver').equalTo(userId).onValue.listen( (event) {
-          receivedChange(userId);
-        },
-        onError: (error) {
-          print("Received requests stream failed:\n$error");
-        },
-      );
+  StreamSubscription<DatabaseEvent> senderRequestsStream(String userId,void Function(String) requestChange) {
+    Query q = _requestTableRef().orderByChild('sender').equalTo(userId);
+
+    return q.onValue.listen( (event) async {
+        requestChange(userId);
+      },
+      onError:(error) {
+        print("Sender stream failed:\n$error");
+      },
+    );
+
   }
 
-  StreamSubscription<DatabaseEvent> sentRequestsStream(String userId,void Function(String) sentChange) {
-      return requestTableRef().orderByChild('sender').equalTo(userId).onValue.listen( (event) {
-          sentChange(userId);
-        },
-        onError: (error) {
-          print("Sent requests stream failed:\n$error");
-        },
-      );
+  StreamSubscription<DatabaseEvent> receiverRequestsStream(String userId,void Function(String) requestChange) {
+    Query q = _requestTableRef().orderByChild('receiver').equalTo(userId);
+
+    return q.onValue.listen( (event) async {
+        requestChange(userId);
+      },
+      onError:(error) {
+        print("Receiver stream failed:\n$error");
+      },
+    );
+
   }
 
   Future<Users> findUsers(String userId,String find) async{
-    var emailQuerySnapshot = await userTableRef().orderByChild('email').equalTo(find).get();
-    var usernameQuerySnapshot = await userTableRef().orderByChild('username').equalTo(find).get();
+    var emailQuerySnapshot = await _userTableRef().orderByChild('email').equalTo(find).get();
+    var usernameQuerySnapshot = await _userTableRef().orderByChild('username').equalTo(find).get();
 
     Users ret = [];
 
@@ -338,7 +361,7 @@ class FirebaseAdapter {
   }
 
   Future<UserData> getUser(String userId,{bool withLocation = false}) async {
-    var userSnapshot = await userRef(userId).get();
+    var userSnapshot = await _userRef(userId).get();
 
     if(!userSnapshot.exists) {
       print("Error: could not find user with id\n$userId");
@@ -365,7 +388,7 @@ class FirebaseAdapter {
     );
 
     if (withLocation) {
-      var locationSnapshot = await locationTableRef().child(id).get();
+      var locationSnapshot = await _locationTableRef().child(id).get();
 
       if(locationSnapshot.value == null) {
         print("Error: could not find user location with id doc value null\n$userId");

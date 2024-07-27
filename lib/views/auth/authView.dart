@@ -44,7 +44,7 @@ class _AuthViewState extends ConsumerState<AuthView> {
           stream: FirebaseAuth.instance.authStateChanges(),
           builder: (context,snapshot) {
             if(snapshot.hasData) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
+              WidgetsBinding.instance.addPostFrameCallback( (_) {
                 navigate(context);
               });
               return const SizedBox();

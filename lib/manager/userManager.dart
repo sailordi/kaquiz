@@ -15,43 +15,22 @@ class UserManager extends StateNotifier<UserModel> {
   final StateNotifierProviderRef ref;
   late FirebaseAdapter firebaseA = FirebaseAdapter();
   late TimerAdapter timerA;
-  StreamSubscription<DatabaseEvent>? _friendStream,_receivedRequestsStream,_sentRequestsStream;
+  StreamSubscription<DatabaseEvent>? _friendStream;
+  StreamSubscription<DatabaseEvent>? _receiverRequestsStream,_senderRequestsStream;
 
   UserManager(this.ref) : super(UserModel.empty() ){
     timerA = TimerAdapter(minutes: 10,onTiger: _timerFunctions);
   }
 
   Future<void> logIn(String email,String password) async {
-    String userId = "";
-
     try {
-      userId = await firebaseA.logIn(email,password);
+      await firebaseA.logIn(email,password);
     } on MyError catch (e) {
       throw MyError("Error: Could not login\n${e.text}");
     } on String catch(e) {
       throw MyError(e);
     }
 
-    _friendStream = firebaseA.friendStream(userId,(String userId) async {
-      var friends = await firebaseA.getFriends(userId);
-
-      state = state.copyWith(friends: friends);
-    });
-
-    _sentRequestsStream = firebaseA.sentRequestsStream(userId,(String userId) async {
-      print("Sent stream user id: $userId");
-      var req = await firebaseA.getRequests(userId,true);
-
-      state = state.copyWith(sentRequests: req);
-    });
-
-    _receivedRequestsStream = firebaseA.receivedRequestsStream(userId,(String userId) async {
-      var req = await firebaseA.getRequests(userId,false);
-
-      state = state.copyWith(sentRequests: req);
-    });
-
-    timerA.start();
   }
 
   Future<void> register(String email,String password,String username,File? image) async {
@@ -69,29 +48,79 @@ class UserManager extends StateNotifier<UserModel> {
   Future<void> initData() async {
     await _updateLocation();
     state = await firebaseA.getYourData();
+    _initStreams();
+
+    timerA.start();
   }
 
   void logOut() {
-    state = UserModel.empty();
+    timerA.stop();
+    _closeStreams();
 
-    if(_friendStream != null) {
-      _friendStream?.cancel();
-      _friendStream = null;
-    }
-    if(_receivedRequestsStream != null) {
-      _receivedRequestsStream?.cancel();
-      _receivedRequestsStream = null;
-    }
-    if(_sentRequestsStream != null) {
-      _sentRequestsStream?.cancel();
-      _sentRequestsStream = null;
-    }
+    state = UserModel.empty();
 
     firebaseA.logOut();
   }
 
   Future<void> fetchFriends() async {
     timerA.trigger();
+  }
+
+  Future<void> fetchRequests() async {
+    String id = state.data.id;
+
+    List<Users> userL = await Future.wait([
+      firebaseA.getRequests(id,sent: true),
+      firebaseA.getRequests(id,sent: false),
+    ]);
+
+    state = state.copyWith(receivedRequests: userL.last,sentRequests: userL.first);
+  }
+
+  Future<void> findUser(String find) async {
+    if(find.isEmpty) {
+      state = state.copyWith(foundUsers: []);
+    }
+
+    var users =  await firebaseA.findUsers(state.data.id,find);
+
+    state = state.copyWith(foundUsers: users);
+  }
+
+  Future<UserData> sendRequest(int index) async {
+    var foundU = state.foundUsers;
+
+    try {
+      await firebaseA.sendRequest(state.data.id,foundU.elementAt(index).id );
+    } on String catch(e) {
+      rethrow;
+    }
+
+    return foundU.elementAt(index);
+  }
+
+  Future<UserData> acceptRequest(int index) async {
+    var rec = state.receivedRequests;
+
+      await firebaseA.acceptRequests(state.data.id,rec.elementAt(index).id);
+
+      return rec.elementAt(index);
+  }
+
+  Future<UserData> declineRequest(int index) async {
+    var rec = state.receivedRequests;
+
+      await firebaseA.declineRequests(state.data.id,rec.elementAt(index).id);
+
+      return rec.elementAt(index);
+  }
+
+  Future<UserData> removeFriend(int index) async {
+    var friends = state.friends;
+
+      await firebaseA.removeFriend(state.data.id,friends.elementAt(index).id );
+
+      return friends.elementAt(index);
   }
 
   Future<void> _updateLocation() async {
@@ -115,58 +144,48 @@ class UserManager extends StateNotifier<UserModel> {
     state = state.copyWith(data: d,friends: friends);
   }
 
-  Future<void> fetchRequests() async {
-    String id = state.data.id;
+  Future<void> _initStreams() async {
+    _friendStream = firebaseA.friendStream(state.data.id,(String userId) async {
+      var friends = await firebaseA.getFriends(userId);
 
-    List<Users> userL = await Future.wait([
-      firebaseA.getRequests(id,true),
-      firebaseA.getRequests(id,false),
-    ]);
+      state = state.copyWith(friends: friends);
+    }
+    );
 
-    state = state.copyWith(receivedRequests: userL.last,sentRequests: userL.first);
+    _senderRequestsStream = firebaseA.senderRequestsStream(state.data.id,(String userId) async {
+      Users u = await firebaseA.getRequests(userId,sent: true);
+
+      print("sent Triggered");
+
+      state = state.copyWith(sentRequests: u);
+    });
+
+    _receiverRequestsStream = firebaseA.receiverRequestsStream(state.data.id,(String userId) async {
+      Users u = await firebaseA.getRequests(userId,sent: false);
+
+      print("rec Triggered");
+
+      state = state.copyWith(receivedRequests: u);
+    });
+
   }
 
-  Future<void> findUser(String find) async {
-    if(find.isEmpty) {
-      state = state.copyWith(foundUsers: []);
+  Future<void> _closeStreams() async {
+    if(_friendStream != null) {
+      _friendStream?.cancel();
+      _friendStream = null;
     }
 
-    var users =  await firebaseA.findUsers(state.data.id,find);
-
-    state = state.copyWith(foundUsers: users);
-  }
-
-  Future<void> sendRequest(int index) async {
-    var sent = state.sentRequests;
-    var foundU = state.foundUsers;
-
-    try {
-      await firebaseA.sendRequest(state.data.id,foundU.elementAt(index).id );
-
-    } on String catch(e) {
-      rethrow;
+    if(_receiverRequestsStream != null) {
+      _receiverRequestsStream?.cancel();
+      _receiverRequestsStream = null;
     }
 
-    state = state.copyWith(sentRequests: sent);
-  }
+    if(_senderRequestsStream != null) {
+      _senderRequestsStream?.cancel();
+      _senderRequestsStream = null;
+    }
 
-  Future<void> acceptRequest(int index) async {
-    var rec = state.receivedRequests;
-    var friends = state.friends;
-
-      firebaseA.addFriend(state.data.id,rec.elementAt(index).id);
-  }
-
-  Future<void> declineRequest(int index) async {
-    var rec = state.receivedRequests;
-
-      await firebaseA.declineRequests(state.data.id,rec.elementAt(index).id);
-  }
-
-  Future<void> removeFriend(int index) async {
-    var friends = state.friends;
-
-      await firebaseA.removeFriend(state.data.id,friends.elementAt(index).id );
   }
 
 }
