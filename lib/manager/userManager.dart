@@ -19,7 +19,7 @@ class UserManager extends StateNotifier<UserModel> {
   StreamSubscription<DatabaseEvent>? _receiverRequestsStream,_senderRequestsStream;
 
   UserManager(this.ref) : super(UserModel.empty() ){
-    timerA = TimerAdapter(minutes: 10,onTiger: _timerFunctions);
+    timerA = TimerAdapter(time: 5,onTiger: _timerFunctions);
   }
 
   Future<void> logIn(String email,String password) async {

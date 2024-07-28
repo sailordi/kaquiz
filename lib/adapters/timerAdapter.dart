@@ -3,14 +3,14 @@ import 'dart:async';
 class TimerAdapter {
   bool _running = false;
   late Timer _timer;
-  final int minutes;
+  final int time;
   final void Function()? onTiger;
 
-  TimerAdapter({required this.minutes,this.onTiger});
+  TimerAdapter({required this.time,this.onTiger});
 
   void start() {
     onTiger;
-    _timer = Timer.periodic(Duration(minutes: minutes),(timer) { onTiger; } );
+    _timer = Timer.periodic(Duration(seconds: time),(timer) { onTiger; } );
     _running = true;
   }
 
