@@ -1,4 +1,4 @@
-# kahoot
+# kaquiz
 
 ## Instructions
 The mobile app you will need to develop is designed to allow users to connect with their friends and track their last known location. Upon logging into the app via email, users need to be able to search for their friends by email and send friend requests. Once two users have become friends within the app, they will be able to see each other's last known location when the app is turned on.
