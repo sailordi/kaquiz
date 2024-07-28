@@ -12,30 +12,30 @@ import '../models/myError.dart';
 class FirebaseAdapter {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
-  final DatabaseReference database = FirebaseDatabase.instance.ref();
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
 
   DatabaseReference _userTableRef() {
-    return database.child("users");
+    return _database.child("users");
   }
 
   DatabaseReference _userRef(String userId) {
-    return database.child("users/$userId");
+    return _database.child("users/$userId");
   }
 
-  DatabaseReference _requestTableRef() {
-    return database.child("requests");
+  DatabaseReference _sentTableRef(userId) {
+    return _database.child("users/$userId/sentRequests");
+  }
+
+  DatabaseReference _receivedTableRef(userId) {
+    return _database.child("users/$userId/receivedRequests");
   }
 
   DatabaseReference _locationTableRef() {
-    return database.child("locations");
+    return _database.child("locations");
   }
 
   DatabaseReference _friendTableRef(String userId) {
-    return database.child("users/$userId/friends");
-  }
-
-  String _createRequestKey(String senderId,String receiverId) {
-        return "$senderId-$receiverId";
+    return _database.child("users/$userId/friends");
   }
 
   FirebaseAdapter();
@@ -179,15 +179,15 @@ class FirebaseAdapter {
   }
 
   Future<void> sendRequest(String userId,String toId) async {
-    var senderSnapshot = await _requestTableRef().child(_createRequestKey(userId,toId) ).get();
-    var receiverSnapshot = await _requestTableRef().child(_createRequestKey(toId,userId) ).get();
+    var sentSnapshot = await _sentTableRef(userId).child(toId).get();
+    var receivedSnapshot = await _receivedTableRef(userId).child(toId).get();
     var friendSnapshot = await _friendTableRef(userId).orderByChild('id').equalTo(toId).get();
 
-    if (senderSnapshot.exists) {
+    if (sentSnapshot.exists) {
       var user = await getUser(toId);
       throw "Error: You have already sent request to ${user.userName}(${user.email})";
     }
-    if (receiverSnapshot.exists) {
+    if (receivedSnapshot.exists) {
       var user = await getUser(toId);
       throw "Error: You have already received request from ${user.userName}(${user.email})";
     }
@@ -197,7 +197,11 @@ class FirebaseAdapter {
       throw "Error: This user ${user.userName}(${user.email}) is already your friend";
     }
 
-    await _requestTableRef().child(_createRequestKey(userId,toId) ).set({"sender": userId, "receiver": toId});
+    await Future.wait([
+      _sentTableRef(userId).child(toId).set({'id':toId}),
+      _receivedTableRef(toId).child(userId).set({'id':userId}),
+    ]);
+
   }
 
   Future<void>  acceptRequests(String userId,String friendId) async {
@@ -210,9 +214,19 @@ class FirebaseAdapter {
       throw "Error: ${user.userName}(${user.email}) has already been added as a friend";
     }
 
-    var requestSnapshot = await _requestTableRef().child(_createRequestKey(friendId,userId) ).get();
+    var receivedSnapshot = await _receivedTableRef(userId).child(friendId).get();
+    var sentSnapshot = await _receivedTableRef(friendId).child(userId).get();
 
-    for (var doc in requestSnapshot.children) {
+    for (var doc in receivedSnapshot.children) {
+      if(!doc.exists) {
+        print("Error: could not get doc remove requests with userid\n$userId");
+        continue;
+      }
+
+      await doc.ref.remove();
+    }
+
+    for (var doc in sentSnapshot.children) {
       if(!doc.exists) {
         print("Error: could not get doc remove requests with userid\n$userId");
         continue;
@@ -229,9 +243,19 @@ class FirebaseAdapter {
   }
 
   Future<void> declineRequests(String userId,String friendId) async {
-    var requestSnapshot = await _requestTableRef().child(_createRequestKey(friendId,userId) ).get();
+    var receivedSnapshot = await _receivedTableRef(userId).child(friendId).get();
+    var sentSnapshot = await _receivedTableRef(friendId).child(userId).get();
 
-      for (var doc in requestSnapshot.children) {
+      for (var doc in receivedSnapshot.children) {
+        if(!doc.exists) {
+          print("Error: could not get doc remove requests with userid\n$userId");
+          continue;
+        }
+
+        await doc.ref.remove();
+      }
+
+      for (var doc in sentSnapshot.children) {
         if(!doc.exists) {
           print("Error: could not get doc remove requests with userid\n$userId");
           continue;
@@ -244,61 +268,53 @@ class FirebaseAdapter {
 
   Future<Users> getRequests(String id,{required bool sent}) async        {
     Users ret = [];
-    Query query;
+    DataSnapshot snapshot;
 
     if(sent) {
-      query = _requestTableRef().orderByChild('sender').equalTo(id);
+      snapshot = await _sentTableRef(id).get();
     } else {
-      query = _requestTableRef().orderByChild('receiver').equalTo(id);
+      snapshot = await _receivedTableRef(id).get();
     }
 
-    var requestSnapshot = await query.get();
-
-    for (var doc in requestSnapshot.children) {
+    for (var doc in snapshot.children) {
       if(doc.value == null) {
         print("Error: could not get doc value requests with userid\n$id");
         continue;
       }
 
-      Map<String, dynamic> data =  Map<String, dynamic>.from(doc.value as dynamic);
+      Map<String,dynamic> data =  Map<String, dynamic>.from(doc.value as dynamic);
 
-      String senderId = data["sender"];
-      String receiverId = data["receiver"];
+      String requestId = data["id"];
 
-      if (sent) {
-        ret.add(await getUser(receiverId));
-      } else {
-        ret.add(await getUser(senderId));
-      }
-
+      ret.add(await getUser(requestId));
     }
 
     return ret;
   }
 
-  StreamSubscription<DatabaseEvent> senderRequestsStream(String userId,void Function(String) requestChange) {
-    Query q = _requestTableRef().orderByChild('sender').equalTo(userId);
+  StreamSubscription<DatabaseEvent> requestsStream(String userId,void Function(String) requestChange,{required bool sent}) {
 
-    return q.onValue.listen( (event) async {
+    if(sent) {
+      var q = _sentTableRef(userId);
+
+      return q.onValue.listen( (event) async {
         requestChange(userId);
       },
-      onError:(error) {
-        print("Sender stream failed:\n$error");
-      },
-    );
+        onError:(error) {
+          print("Sender stream failed:\n$error");
+        },
+      );
+    } else {
+      var q = _receivedTableRef(userId);
 
-  }
-
-  StreamSubscription<DatabaseEvent> receiverRequestsStream(String userId,void Function(String) requestChange) {
-    Query q = _requestTableRef().orderByChild('receiver').equalTo(userId);
-
-    return q.onValue.listen( (event) async {
+      return q.onValue.listen( (event) async {
         requestChange(userId);
       },
-      onError:(error) {
-        print("Receiver stream failed:\n$error");
-      },
-    );
+        onError:(error) {
+          print("Receiver stream failed:\n$error");
+        },
+      );
+    }
 
   }
 

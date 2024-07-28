@@ -152,7 +152,7 @@ class UserManager extends StateNotifier<UserModel> {
     }
     );
 
-    _senderRequestsStream = firebaseA.senderRequestsStream(state.data.id,(String userId) async {
+    _senderRequestsStream = firebaseA.requestsStream(state.data.id,sent: true,(String userId) async {
       Users u = await firebaseA.getRequests(userId,sent: true);
 
       print("sent Triggered");
@@ -160,7 +160,7 @@ class UserManager extends StateNotifier<UserModel> {
       state = state.copyWith(sentRequests: u);
     });
 
-    _receiverRequestsStream = firebaseA.receiverRequestsStream(state.data.id,(String userId) async {
+    _receiverRequestsStream = firebaseA.requestsStream(state.data.id,sent: true,(String userId) async {
       Users u = await firebaseA.getRequests(userId,sent: false);
 
       print("rec Triggered");

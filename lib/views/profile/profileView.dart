@@ -176,6 +176,32 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
     );
   }
 
+  dynamic _findUserList(Users users) {
+    if(users.isEmpty && _findUserC.text.isEmpty) {
+      return const SizedBox();
+    }
+    if(users.isEmpty && _findUserC.text.isNotEmpty) {
+      return Text("User with username/email ${_findUserC.text} could be found");
+    }
+    return Flexible(
+      child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: users.length,
+          itemBuilder: (context,index) {
+            return Column(
+              children: [
+                FoundUserWidget(
+                  user: users[index],
+                  sendInvite: () async { await _sendInvite(index,context); },
+                ),
+                (index != users.length-1) ? const SizedBox(height: 20,) : const SizedBox(),
+              ],
+            );
+          }
+      ),
+    );
+  }
+
   dynamic _findUsers(BuildContext context,Users users) {
     return Column(
       children: [
@@ -187,6 +213,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
             TextFieldWidget(
                 hint: "Username/email",
                 controller: _findUserC,
+              align: TextAlign.center,
             ),
             const SizedBox(height: 5,),
             SizedBox(
@@ -200,23 +227,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> with SingleTickerProv
               )
             ),
             const SizedBox(height: 50,),
-            Flexible(
-              child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: users.length,
-                  itemBuilder: (context,index) {
-                    return Column(
-                      children: [
-                        FoundUserWidget(
-                         user: users[index],
-                         sendInvite: () async { await _sendInvite(index,context); },
-                        ),
-                        (index != users.length-1) ? const SizedBox(height: 20,) : const SizedBox(),
-                      ],
-                    );
-                  }
-              ),
-            ),
+            _findUserList(users),
             const SizedBox(height: 5,),
         ],
     );
