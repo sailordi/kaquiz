@@ -17,6 +17,8 @@ GoogleService-Info.plist
 firebase_app_id_file.json
 secrets.env
 firebase.json
+# AppDelegate
+# AndroidManifest
 
 # IntelliJ related
 *.iml
