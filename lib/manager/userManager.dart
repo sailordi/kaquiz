@@ -25,6 +25,7 @@ class UserManager extends StateNotifier<UserModel> {
   Future<void> logIn(String email,String password) async {
     try {
       await firebaseA.logIn(email,password);
+      await _initData();
     } on MyError catch (e) {
       throw MyError("Error: Could not login\n${e.text}");
     } on String catch(e) {
@@ -43,14 +44,6 @@ class UserManager extends StateNotifier<UserModel> {
     }
 
     await logIn(email,password);
-  }
-
-  Future<void> initData() async {
-    await _updateLocation();
-    state = await firebaseA.getYourData();
-    _initStreams();
-
-    timerA.start();
   }
 
   void logOut() {
@@ -121,6 +114,14 @@ class UserManager extends StateNotifier<UserModel> {
       await firebaseA.removeFriend(state.data.id,friends.elementAt(index).id );
 
       return friends.elementAt(index);
+  }
+
+  Future<void> _initData() async {
+    await _updateLocation();
+    state = await firebaseA.getYourData();
+    await _initStreams();
+
+    timerA.start();
   }
 
   Future<void> _updateLocation() async {

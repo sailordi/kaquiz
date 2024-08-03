@@ -1,0 +1,3 @@
+
+String firstLatitude = "";
+String firstLongitude = "";

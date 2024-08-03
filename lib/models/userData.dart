@@ -1,4 +1,5 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:kaquiz/consts.dart';
 
 String _mocProfilePic = "https://firebasestorage.googleapis.com/v0/b/kaquiz-a7063.appspot.com/o/default.png?alt=media&token=ddc5c54a-1921-4332-82ce-40308ebf3809";
 
@@ -36,7 +37,10 @@ class UserData {
   }
 
   LatLng pos() {
-      return LatLng(double.parse(latitude),double.parse(longitude) );
+      String la = (latitude.isNotEmpty) ? latitude : firstLatitude;
+      String lo = (longitude.isNotEmpty) ? longitude : firstLongitude;
+
+      return LatLng(double.parse(la),double.parse(lo) );
   }
 
 }

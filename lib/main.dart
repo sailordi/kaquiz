@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kaquiz/consts.dart';
 
 import 'adapters/locationAdapter.dart';
 import 'firebase_options.dart';
@@ -16,7 +17,10 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  await LocationAdapter.determinePosition();
+  var pos = await LocationAdapter.determinePosition();
+
+  firstLatitude = pos.latitude.toString();
+  firstLongitude = pos.longitude.toString();
 
   runApp(const MyApp());
 }
